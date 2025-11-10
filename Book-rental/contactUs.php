@@ -2,31 +2,27 @@
 <?php
 $msg = '';
 if (isset($_POST['submit'])) {
-  $name = getSafeValue($con, $_POST['name']);
-  $email = getSafeValue($con, $_POST['email']);
-  $mobile = getSafeValue($con, $_POST['mobile']);
-  $message = getSafeValue($con, $_POST['message']);
-  date_default_timezone_set('Asia/Kolkata');
-  $dateTime = date('Y-m-d H:i:s');
-  $sql = "insert into contact_us(name, email, mobile, message, date)
-            values('$name', '$email', '$mobile', '$message','$dateTime')";
-  if (mysqli_query($con, $sql)) {
-    $msg = "Message sent";
-  } else {
-    $msg = "error";
-  }
+    $name = getSafeValue($con, $_POST['name']);
+    $email = getSafeValue($con, $_POST['email']);
+    $mobile = getSafeValue($con, $_POST['mobile']);
+    $message = getSafeValue($con, $_POST['message']);
+    date_default_timezone_set('Asia/Kolkata');
+    $dateTime = date('Y-m-d H:i:s');
+    
+    $sql = "INSERT INTO contact_us(name, email, mobile, message, date) 
+            VALUES ('$name', '$email', '$mobile', '$message', '$dateTime')";
+    $msg = mysqli_query($con, $sql) ? "Message sent" : "Error";
 }
+
+// Auto-fill if user is logged in
+$nameAuto = $emailAuto = $mobileAuto = '';
 if (isset($_SESSION['USER_LOGIN'])) {
-  $userId = $_SESSION['USER_ID'];
-  $res = mysqli_query($con, "select * from users where id='$userId'");
-  $row = mysqli_fetch_assoc($res);
-  $nameAuto = $row['name'];
-  $emailAuto = $row['email'];
-  $mobileAuto = $row['mobile'];
-} else {
-  $nameAuto = '';
-  $emailAuto = '';
-  $mobileAuto = '';
+    $res = mysqli_query($con, "SELECT name, email, mobile FROM users WHERE id=" . (int)$_SESSION['USER_ID']);
+    if ($row = mysqli_fetch_assoc($res)) {
+        $nameAuto = $row['name'];
+        $emailAuto = $row['email'];
+        $mobileAuto = $row['mobile'];
+    }
 }
 ?>
 <script>

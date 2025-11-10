@@ -1,18 +1,7 @@
 <?php require('header.php') ?>
 <?php
-$search = mysqli_real_escape_string($con, $_GET['search']);
-function getBook($con)
-{
-  $search = mysqli_real_escape_string($con, $_GET['search']);
-  $sql = "SELECT * FROM books WHERE (`name` LIKE '%$search%') OR (`author` LIKE '%$search%')";
-  $res = mysqli_query($con, $sql);
-  $data = array();
-  while ($row = mysqli_fetch_assoc($res)) {
-    $data[] = $row;
-  }
-  return $data;
-}
-
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$getBook = searchBooks($con, $search);
 ?>
 <script>
 document.title = "Book Categories | Book Rental";

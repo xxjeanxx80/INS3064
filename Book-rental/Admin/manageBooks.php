@@ -14,75 +14,75 @@ $short_desc = '';
 $error = '';
 $msg = '';
 
-if (isset($_GET['id']) && $_GET['id'] != '') {
-  $id = getSafeValue($con, $_GET['id']);
-  $sql = mysqli_query($con, "select * from books where id='$id'");
-  $check = mysqli_num_rows($sql);
-  if ($check > 0) {
-    $row = mysqli_fetch_assoc($sql);
-    $category_id = $row['category_id'];
-    $ISBN = $row['ISBN'];
-    $name = $row['name'];
-    //      $img = $row['img'];
-    $author = $row['author'];
-    $mrp = $row['mrp'];
-    $security = $row['security'];
-    $rent = $row['rent'];
-    $qty = $row['qty'];
-    $short_desc = $row['short_desc'];
-    $description = $row['description'];
-  } else {
-    echo "<script>window.location.href='books.php';</script>";
-    exit;
-  }
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if ($id > 0) {
+    $sql = mysqli_query($con, "SELECT * FROM books WHERE id=$id");
+    if ($row = mysqli_fetch_assoc($sql)) {
+        $category_id = $row['category_id'];
+        $ISBN = $row['ISBN'];
+        $name = $row['name'];
+        $author = $row['author'];
+        $mrp = $row['mrp'] ?? '';
+        $security = $row['security'];
+        $rent = $row['rent'];
+        $qty = $row['qty'];
+        $short_desc = $row['short_desc'];
+        $description = $row['description'];
+    } else {
+        header('Location: books.php');
+        exit;
+    }
 }
 
 if (isset($_POST['submit'])) {
-  $category_id = getSafeValue($con, $_POST['category_id']);
-  $ISBN = getSafeValue($con, $_POST['ISBN']);
-  $name = getSafeValue($con, $_POST['name']);
-  $img = getSafeValue($con, $_POST['img']);
-  $author = getSafeValue($con, $_POST['author']);
-  $mrp = getSafeValue($con, $_POST['mrp']);
-  $security = getSafeValue($con, $_POST['security']);
-  $rent = getSafeValue($con, $_POST['rent']);
-  $qty = getSafeValue($con, $_POST['qty']);
-  $short_desc = getSafeValue($con, $_POST['short_desc']);
-  $description = getSafeValue($con, $_POST['description']);
-  $sql = mysqli_query($con, "select * from books where name='$name'");
-  $check = mysqli_num_rows($sql);
-  if ($check > 0) {
-    if (isset($_GET['id']) && $_GET['id'] != '') {
-      $getData = mysqli_fetch_assoc($sql);
-      if ($id == $getData['id']) {
-      } else {
-        $msg = "Book already exist";
-      }
-    } else {
-      $msg = "Book already exist";
+    $category_id = (int)$_POST['category_id'];
+    $ISBN = getSafeValue($con, $_POST['ISBN']);
+    $name = getSafeValue($con, $_POST['name']);
+    $author = getSafeValue($con, $_POST['author']);
+    $mrp = (int)($_POST['mrp'] ?? 0);
+    $security = (int)$_POST['security'];
+    $rent = (int)$_POST['rent'];
+    $qty = (int)$_POST['qty'];
+    $short_desc = getSafeValue($con, $_POST['short_desc']);
+    $description = getSafeValue($con, $_POST['description']);
+    
+    // Check if book name already exists (except current book)
+    $checkSql = mysqli_query($con, "SELECT id FROM books WHERE name='$name'");
+    if (mysqli_num_rows($checkSql) > 0) {
+        $existing = mysqli_fetch_assoc($checkSql);
+        if (!$id || $existing['id'] != $id) {
+            $msg = "Book already exists";
+        }
     }
-  }
-
-  if ($msg == '') {
-    if (isset($_GET['id']) && $_GET['id'] != '') {
-      $sql = "update books set category_id='$category_id', ISBN='$ISBN', name='$name', author='$author', mrp='$mrp',
-                 security='$security', rent='$rent', qty='$qty', short_desc='$short_desc', description='$description',
-                 where id='$id' ";
-    } else {
-      $img = rand(1111111111, 2147483647) . '_' . $_FILES['img']['name'];
-      move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
-      $sql = "insert into books(category_id, ISBN, name, author, mrp, security, rent, qty, short_desc, description,
-                                    status, img)
-                values('$category_id', '$ISBN', '$name', '$author', '$mrp', '$security', '$rent', '$qty', '$short_desc',
-                       '$description', '1', '$img')";
+    
+    if (empty($msg)) {
+        if ($id > 0) {
+            // Update existing book
+            $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
+                    mrp=$mrp, security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
+                    description='$description' WHERE id=$id";
+        } else {
+            // Insert new book
+            if (!empty($_FILES['img']['name'])) {
+                $img = time() . '_' . $_FILES['img']['name'];
+                move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
+            } else {
+                $msg = "Please upload book image";
+            }
+            
+            if (empty($msg)) {
+                $sql = "INSERT INTO books(category_id, ISBN, name, author, mrp, security, rent, qty, short_desc, description, status, img)
+                        VALUES ($category_id, '$ISBN', '$name', '$author', $mrp, $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
+            }
+        }
+        
+        if (empty($msg) && mysqli_query($con, $sql)) {
+            header('Location: books.php');
+            exit;
+        } else {
+            $error = "Error: " . mysqli_error($con);
+        }
     }
-    if (mysqli_query($con, $sql)) {
-      echo "<script>window.location.href='books.php';</script>";
-      exit;
-    } else {
-      $error = "Error";
-    }
-  }
 }
 ?>
 <main>

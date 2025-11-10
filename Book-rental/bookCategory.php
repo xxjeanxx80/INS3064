@@ -1,11 +1,10 @@
 <?php require('header.php');
-$categoryId = '';
-if (isset($_GET['id'])) {
-    $categoryId = mysqli_real_escape_string($con, $_GET['id']);
-}
-$getProduct = getProduct($con, '', $categoryId);
-$catRes = mysqli_query($con, "select id, category from categories where status=1 order by category asc");
-$catArr = array();
+$categoryId = isset($_GET['id']) ? (int)$_GET['id'] : '';
+$getProduct = $categoryId ? getProduct($con, '', $categoryId) : [];
+
+// Lấy danh sách danh mục
+$catRes = mysqli_query($con, "SELECT id, category FROM categories WHERE status = 1 ORDER BY category ASC");
+$catArr = [];
 while ($row = mysqli_fetch_assoc($catRes)) {
     $catArr[] = $row;
 }

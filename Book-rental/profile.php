@@ -4,59 +4,47 @@ if (!isset($_SESSION['USER_LOGIN'])) {
   echo "<script>window.top.location='SignIn.php';</script>";
   exit;
 }
-$userId = $_SESSION['USER_ID'];
-$res = mysqli_query($con, "select * from users where id='$userId'");
+$userId = (int)$_SESSION['USER_ID'];
+$res = mysqli_query($con, "SELECT * FROM users WHERE id=$userId");
 $row = mysqli_fetch_assoc($res);
 $nameAuto = $row['name'];
 $emailAuto = $row['email'];
 $mobileAuto = $row['mobile'];
 $passwordCheck = $row['password'];
-$msg = '';
-$nameErr = $emailErr = $mobileErr = $passwordErr = "";
-$nameTemp = $emailTemp = $mobileTemp = $passwordTemp = "";
+
+$msg = $nameErr = $emailErr = '';
+
 if (isset($_POST['submit'])) {
-  //validation for name
-  if (empty($_POST["name"])) {
-    $nameErr = "Please enter a name";
-  } else {
-    $nameTemp = getSafeValue($con, $_POST['name']);
-    if (preg_match("/^[a-zA-Z-' ]*$/", $nameTemp)) {
-      $name = getSafeValue($con, $_POST['name']);
-      //validation for email
-      if (empty($_POST["email"])) {
-        $emailErr = "Please enter Email address";
-      } else {
-        $emailTemp = getSafeValue($con, $_POST['email']);
-        if (filter_var($emailTemp, FILTER_VALIDATE_EMAIL)) {
-          $email = getSafeValue($con, $_POST['email']);
-          $mobile = getSafeValue($con, $_POST['mobile']);
-          //Validation for password
-          if (empty($_POST["password"])) {
-            $passwordErr = "Please enter a password";
-          } else {
-            $passwordTemp = getSafeValue($con, $_POST['password']);
-          }
-          $password = md5($passwordTemp);
-          date_default_timezone_set('Asia/Kolkata');
-          $doj = date('Y-m-d H:i:s');
-          if ($password == $passwordCheck) {
-            $sql = "UPDATE users SET name='$name', email='$email', mobile='$mobile' WHERE id='$userId'";
-            if (mysqli_query($con, $sql)) {
-              $msg = 'Updated Succesfully --> Changes will be visible next time you login';
-            } else {
-              $msg = "error";
-            }
-          } else {
-            $msg = 'Please Enter Correct Password';
-          }
-        } else {
-          $emailErr = "Please enter valid Email address";
-        }
-      }
+    $name = getSafeValue($con, $_POST['name'] ?? '');
+    $email = getSafeValue($con, $_POST['email'] ?? '');
+    $mobile = getSafeValue($con, $_POST['mobile'] ?? '');
+    $password = md5(getSafeValue($con, $_POST['password'] ?? ''));
+    
+    // Validation
+    if (empty($name)) {
+        $nameErr = "Please enter a name";
+    } elseif (!preg_match("/^[a-zA-Z-' ]*$/", $name)) {
+        $nameErr = "Only letters and white space allowed";
+    } elseif (empty($email)) {
+        $emailErr = "Please enter email address";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $emailErr = "Please enter valid email address";
+    } elseif ($password != $passwordCheck) {
+        $msg = "Incorrect password";
     } else {
-      $nameErr = "Only letters and white space allowed in Name";
+        // Update profile
+        $sql = "UPDATE users SET name='$name', email='$email', mobile='$mobile' WHERE id=$userId";
+        if (mysqli_query($con, $sql)) {
+            $_SESSION['USER_NAME'] = $name;
+            $msg = "Profile updated successfully. Changes will be visible next time you login.";
+            // Refresh data
+            $nameAuto = $name;
+            $emailAuto = $email;
+            $mobileAuto = $mobile;
+        } else {
+            $msg = "Update failed. Please try again.";
+        }
     }
-  }
 }
 ?>
 <script>

@@ -1,57 +1,55 @@
 <?php require('header.php') ?>
 <?php
 if (!isset($_SESSION['USER_LOGIN'])) {
-    echo "<script>window.top.location='SignIn.php';</script>";
+    header('Location: SignIn.php');
     exit;
 }
 
-$bookId = '';
-$duration = '';
-if (isset($_GET['id'])) {
-    $bookId = mysqli_real_escape_string($con, $_GET['id']);
+$bookId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$duration = isset($_GET['duration']) ? (int)$_GET['duration'] : 0;
+
+if (!$bookId || !$duration) {
+    header('Location: index.php');
+    exit;
 }
-if (isset($_GET['duration'])) {
-    $duration = mysqli_real_escape_string($con, $_GET['duration']);
-}
+
 $getProduct = getProduct($con, '', '', $bookId);
-$totalRent = $getProduct['0']['rent'] * $duration;
-$totalPrice = $totalRent + $getProduct['0']['security'];
+if (empty($getProduct)) {
+    header('Location: index.php');
+    exit;
+}
+
+$book = $getProduct[0];
+$totalRent = $book['rent'] * $duration;
+$totalPrice = $totalRent + $book['security'];
 
 
 if (isset($_POST['submit'])) {
     $address = getSafeValue($con, $_POST['address']);
-    $address2 = getSafeValue($con, $_POST['address2']);
-    $pin = getSafeValue($con, $_POST['pin']);
+    $address2 = getSafeValue($con, $_POST['address2'] ?? '');
+    $pin = (int)$_POST['pin'];
     $paymentMethod = getSafeValue($con, $_POST['paymentMethod']);
-    $userId = $_SESSION['USER_ID'];
-    $paymentStatus = 'pending';
-    if ($paymentMethod == 'COD') {
-        $paymentStatus = 'success';
-    }
-    $orderStatus = '1';
+    $userId = (int)$_SESSION['USER_ID'];
+    $paymentStatus = ($paymentMethod == 'COD') ? 'success' : 'pending';
+    
     date_default_timezone_set('Asia/Kolkata');
     $date = date('Y-m-d H:i:s');
+    
+    // Insert order
     $sql = "INSERT INTO orders(user_id, address, address2, pin, payment_method, total, payment_status, order_status, date, duration)
-            VALUES ('$userId', '$address', '$address2', '$pin','$paymentMethod','$totalPrice','$paymentStatus','$orderStatus','$date','$duration')";
+            VALUES ($userId, '$address', '$address2', $pin, '$paymentMethod', $totalPrice, '$paymentStatus', 1, '$date', $duration)";
     mysqli_query($con, $sql);
-
-    //    $orderIdSql = mysqli_query($con, "SELECT id FROM orders ORDER BY id DESC LIMIT 1");
-    //    $row = mysqli_fetch_assoc($orderIdSql);
-    //    $orderIdArr = array();
-    //    $orderIdArr[] = $row;
-
+    
     $orderId = mysqli_insert_id($con);
-    $productId = $getProduct['0']['id'];
-    mysqli_query($con, "INSERT INTO order_detail(order_id,book_id,price,time)
-                                VALUES ('$orderId', '$productId', '$totalPrice', '$duration')");
-
-    $newQty = $getProduct['0']['qty'] - 1;
-    mysqli_query($con, "UPDATE books SET qty = '$newQty' WHERE id='$bookId';");
-?>
-<script>
-window.top.location = 'thankYou.php?orderId=<?php echo $orderId ?>';
-</script>
-<?php
+    
+    // Insert order detail
+    mysqli_query($con, "INSERT INTO order_detail(order_id, book_id, price, time) VALUES ($orderId, $bookId, $totalPrice, $duration)");
+    
+    // Update book quantity
+    mysqli_query($con, "UPDATE books SET qty = qty - 1 WHERE id = $bookId");
+    
+    header("Location: thankYou.php?orderId=$orderId");
+    exit;
 }
 ?>
 <script>
@@ -68,26 +66,17 @@ document.title = "Checkout | Book Rental";
                     <span class="text-primary">Your book</span>
                 </h4>
                 <ul class="list-group mb-3 dark-background">
-                    <li class="list-group-item d-flex justify-content-center fw-bold lh-sm ">
+                    <li class="list-group-item d-flex justify-content-center fw-bold lh-sm">
                         <div>
-                            <h2 class="my-0 fs-5 fw-bold"><?php echo $getProduct['0']['name'] ?></h2>
+                            <h2 class="my-0 fs-5 fw-bold"><?php echo $book['name'] ?></h2>
                         </div>
-                        <!--                        <strong>₹-->
-                        <?php //echo $getProduct['0'] ['price'] 
-                        ?>
-                        <!--</strong>-->
                     </li>
                     <li class="list-group-item justify-content-start lh-sm">
-                        <p><span class="fw-bold">MRP</span> = ₹<span
-                                class="text-decoration-line-through"><?php echo $getProduct['0']['mrp'] ?></span>
-                        </p>
-                        <p><span class="fw-bold">Rent Price</span> = ₹<?php echo $getProduct['0']['rent'] ?> Per Day
-                        </p>
+                        <p><span class="fw-bold">Rent Price</span> = ₫<?php echo $book['rent'] ?> Per Day</p>
                         <p><span class="fw-bold">Duration</span> = <?php echo $duration ?> Days</p>
-                        <p><span class="fw-bold">Total Rent</span> = ₹<?php echo $totalRent ?></p>
-                        <p><span class="fw-bold">Security Deposit<span style="color: red"><sup>*</sup></span></span> =
-                            ₹<?php echo $getProduct['0']['security'] ?></p>
-                        <p><span class="fw-bold">Total price</span> = <?php echo $totalPrice ?> </p>
+                        <p><span class="fw-bold">Total Rent</span> = ₫<?php echo $totalRent ?></p>
+                        <p><span class="fw-bold">Security Deposit<span style="color: red"><sup>*</sup></span></span> = ₫<?php echo $book['security'] ?></p>
+                        <p><span class="fw-bold">Total price</span> = ₫<?php echo $totalPrice ?></p>
                     </li>
                 </ul>
                 <ul class="list-group mb-3">
@@ -95,10 +84,6 @@ document.title = "Checkout | Book Rental";
                         <div>
                             <h2 class="my-0 fs-5 fw-bold"><span style="color: red"><sup>*</sup></span>Deposit Terms</h2>
                         </div>
-                        <!--                        <strong>₹-->
-                        <?php //echo $getProduct['0'] ['price'] 
-                        ?>
-                        <!--</strong>-->
                     </li>
                     <li class="list-group-item justify-content-start lh-sm">
                         <ol type="1">

@@ -83,17 +83,6 @@
     <hr />
     <div class="row gy-3 text-center ">
         <?php
-        function getBook($con)
-        {
-            $sql = "select *from books where best_seller=1 limit 8";
-            $res = mysqli_query($con, $sql);
-            $data = array();
-            while ($row = mysqli_fetch_assoc($res)) {
-                $data[] = $row;
-            }
-            return $data;
-        }
-
         $getBook = getBook($con);
         foreach ($getBook as $list) {
             $img = BOOK_IMAGE_SITE_PATH . $list['img'];

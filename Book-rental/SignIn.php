@@ -1,31 +1,27 @@
 <?php
 require('header.php');
 if (isset($_SESSION['USER_LOGIN'])) {
-    echo "<script>window.top.location='index.php';</script>";
+    header('Location: index.php');
     exit;
 }
-?>
-<?php
-$msg = $passwordTemp = '';
+
+$msg = '';
 if (isset($_POST['submit'])) {
     $email = getSafeValue($con, $_POST['email']);
-    $passwordTemp = getSafeValue($con, $_POST['password']);
-    $password = md5($passwordTemp);
-    $sql = "select * from users where email='$email' and password='$password'";
+    $password = md5(getSafeValue($con, $_POST['password']));
+    $sql = "SELECT * FROM users WHERE email='$email' AND password='$password'";
     $res = mysqli_query($con, $sql);
-    $row = mysqli_fetch_assoc($res);
-    $count = mysqli_num_rows($res);
-    if ($count > 0) {
+    
+    if ($res && mysqli_num_rows($res) > 0) {
+        $row = mysqli_fetch_assoc($res);
         $_SESSION['USER_LOGIN'] = 'yes';
         $_SESSION['USER_ID'] = $row['id'];
         $_SESSION['USER_NAME'] = $row['name'];
-        if (isset($_SESSION['BeforeCheckoutLogin'])) {
-            $checkoutAfterLogin = $_SESSION['BeforeCheckoutLogin'];
-            echo "<script>window.top.location='$checkoutAfterLogin';</script>";
-        } else {
-            echo "<script>window.top.location='index.php';</script>";
-            exit;
-        }
+        
+        $redirect = $_SESSION['BeforeCheckoutLogin'] ?? 'index.php';
+        unset($_SESSION['BeforeCheckoutLogin']);
+        header("Location: $redirect");
+        exit;
     } else {
         $msg = "Invalid Username/Password";
     }

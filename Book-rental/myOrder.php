@@ -1,25 +1,23 @@
 <?php require('header.php') ?>
 <?php
 if (!isset($_SESSION['USER_LOGIN'])) {
-    echo "<script>window.top.location='SignIn.php';</script>";
+    header('Location: SignIn.php');
     exit;
 }
-if (isset($_GET['type']) && $_GET['type'] != ' ') {
-    $type = getSafeValue($con, $_GET['type']);
-    if ($type == 'cancel') {
-        $id = getSafeValue($con, $_GET['id']);
-        $deleteSql = "update orders set order_status='4' where id='$id'";
-        mysqli_query($con, $deleteSql);
 
-        $qtyRes = mysqli_query($con, "SELECT books.qty,books.id FROM orders
-                                            JOIN order_detail ON orders.id=order_detail.order_id
-                                            JOIN books ON order_detail.book_id=books.id
-                                            where order_detail.order_id='$id'");
-        $qtyRow = mysqli_fetch_assoc($qtyRes);
-        $newQty = $qtyRow['qty'] + 1;
-        $bookId = $qtyRow['id'];
-        mysqli_query($con, "UPDATE books SET qty = '$newQty' WHERE id='$bookId';");
+if (isset($_GET['type']) && $_GET['type'] == 'cancel') {
+    $id = (int)$_GET['id'];
+    mysqli_query($con, "UPDATE orders SET order_status=4 WHERE id=$id");
+    
+    $qtyRes = mysqli_query($con, "SELECT books.qty, books.id FROM orders
+                                  JOIN order_detail ON orders.id=order_detail.order_id
+                                  JOIN books ON order_detail.book_id=books.id
+                                  WHERE order_detail.order_id=$id");
+    if ($qtyRow = mysqli_fetch_assoc($qtyRes)) {
+        mysqli_query($con, "UPDATE books SET qty = qty + 1 WHERE id={$qtyRow['id']}");
     }
+    header('Location: myOrder.php');
+    exit;
 }
 ?>
 <script>
@@ -48,32 +46,32 @@ document.title = "My Orders | Book Rental";
         </thead>
         <tbody>
             <?php
-            $userId = '';
-            $userId = $_SESSION['USER_ID'];
-            $res = mysqli_query($con, "select orders.*,name,status_name from orders
-                                            JOIN order_detail ON orders.id=order_detail.order_id
-                                            JOIN books ON order_detail.book_id=books.id
-                                            JOIN order_status ON orders.order_status=order_status.id
-                                            where user_id = $userId order by orders.id desc");
-            while ($row = mysqli_fetch_assoc($res)) { ?>
+            $userId = (int)$_SESSION['USER_ID'];
+            $res = mysqli_query($con, "SELECT orders.*, name, status_name FROM orders
+                                       JOIN order_detail ON orders.id=order_detail.order_id
+                                       JOIN books ON order_detail.book_id=books.id
+                                       JOIN order_status ON orders.order_status=order_status.id
+                                       WHERE user_id=$userId ORDER BY orders.id DESC");
+            while ($row = mysqli_fetch_assoc($res)): 
+                $canCancel = !in_array($row['status_name'], ['Cancelled', 'Returned']);
+            ?>
             <tr>
-                <td> #<?php echo $row['id'] ?> </td>
-                <td> <?php echo $row['date'] ?> </td>
-                <td> <?php echo $row['name'] ?> </td>
-                <td> <?php echo $row['total'] ?> </td>
-                <td> <?php echo $row['duration'] ?> </td>
-                <td> <?php echo $row['address'] ?>, <?php echo $row['address2'] ?> </td>
-                <td> <?php echo $row['payment_method'] ?> </td>
-                <td> <?php echo $row['payment_status'] ?> </td>
-                <td> <?php echo $row['status_name'] ?> </td>
-                <td><?php if ($row['status_name'] === 'Cancelled' || $row['status_name'] === 'Returned') {
-                        } else {
-                            echo "<a class='link-white btn btn-danger px-2 py-1' href='?type=cancel&id=" . $row['id'] .
-                                "'>Cancel</a>";
-                        }
-                        ?></td>
+                <td>#<?php echo $row['id'] ?></td>
+                <td><?php echo $row['date'] ?></td>
+                <td><?php echo $row['name'] ?></td>
+                <td>₫<?php echo $row['total'] ?></td>
+                <td><?php echo $row['duration'] ?> days</td>
+                <td><?php echo $row['address'] ?><?php echo $row['address2'] ? ', ' . $row['address2'] : '' ?></td>
+                <td><?php echo $row['payment_method'] ?></td>
+                <td><?php echo $row['payment_status'] ?></td>
+                <td><?php echo $row['status_name'] ?></td>
+                <td>
+                    <?php if ($canCancel): ?>
+                        <a class="btn btn-danger btn-sm" href="?type=cancel&id=<?php echo $row['id'] ?>">Cancel</a>
+                    <?php endif; ?>
+                </td>
             </tr>
-            <?php } ?>
+            <?php endwhile; ?>
         </tbody>
     </table>
 </div>
