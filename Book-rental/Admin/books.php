@@ -1,40 +1,30 @@
 <?php
 require('topNav.php');
 
+// Xử lý các action
 if (isset($_GET['type']) && $_GET['type'] != ' ') {
-  $type = getSafeValue($con, $_GET['type']);
-  if ($type == 'status') {
-    $operation = getSafeValue($con, $_GET['operation']);
-    $id = getSafeValue($con, $_GET['id']);
-    if ($operation == 'active') {
-      $status = '1';
-    } else {
-      $status = '0';
+    $type = getSafeValue($con, $_GET['type']);
+    $id = (int)$_GET['id'];
+    
+    if ($type == 'status') {
+        $status = ($_GET['operation'] == 'active') ? 1 : 0;
+        mysqli_query($con, "UPDATE books SET status=$status WHERE id=$id");
+    } elseif ($type == 'best_seller') {
+        $bestSeller = ($_GET['operation'] == 'active') ? 1 : 0;
+        mysqli_query($con, "UPDATE books SET best_seller=$bestSeller WHERE id=$id");
+    } elseif ($type == 'delete') {
+        mysqli_query($con, "DELETE FROM books WHERE id=$id");
     }
-    $updateStatusSql = "update books set status='$status' where id='$id'";
-    mysqli_query($con, $updateStatusSql);
-  }
-
-  if ($type == 'best_seller') {
-    $operation = getSafeValue($con, $_GET['operation']);
-    $id = getSafeValue($con, $_GET['id']);
-    if ($operation == 'active') {
-      $bestSeller = '1';
-    } else {
-      $bestSeller = '0';
-    }
-    $updateStatusSql = "update books set best_seller='$bestSeller' where id='$id'";
-    mysqli_query($con, $updateStatusSql);
-  }
-
-  if ($type == 'delete') {
-    $id = getSafeValue($con, $_GET['id']);
-    $deleteSql = "delete from books where id='$id'";
-    mysqli_query($con, $deleteSql);
-  }
+    
+    header('Location: books.php');
+    exit;
 }
 
-$sql = "select books.*, categories.category from books left join categories on books.category_id=categories.id order by books.name asc";
+// Lấy danh sách sách
+$sql = "SELECT books.*, categories.category 
+        FROM books 
+        LEFT JOIN categories ON books.category_id=categories.id 
+        ORDER BY books.name ASC";
 $res = mysqli_query($con, $sql);
 ?>
 <!--Main layout-->
@@ -54,57 +44,47 @@ $res = mysqli_query($con, $sql);
                     <th>img</th>
                     <th>Name</th>
                     <th>Author</th>
-                    <th>VND</th>
                     <th>Security</th>
                     <th>Rent</th>
                     <th>Price</th>
                     <th>Qty</th>
-                    <!--                <th></th>-->
-                    <th></th>
-                    <th></th>
-                    <th></th>
+                    <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php
-        while ($row = mysqli_fetch_assoc($res)) { ?>
+                <?php while ($row = mysqli_fetch_assoc($res)): ?>
                 <tr>
-                    <td> <?php echo $row['ISBN'] ?> </td>
-                    <td> <?php echo $row['category'] ?> </td>
+                    <td><?php echo htmlspecialchars($row['ISBN']) ?></td>
+                    <td><?php echo htmlspecialchars($row['category'] ?? 'N/A') ?></td>
                     <td>
-                        <img src="<?php echo BOOK_IMAGE_SITE_PATH . $row['img'] ?>" class="card-img" height="60px"
-                            width="80px">
+                        <img src="<?php echo BOOK_IMAGE_SITE_PATH . $row['img'] ?>" 
+                             class="card-img" height="60px" width="80px" alt="Book cover">
                     </td>
-                    <td> <?php echo $row['name'] ?> </td>
-                    <td> <?php echo $row['author'] ?> </td>
-                    <td> <?php echo $row['mrp'] ?> </td>
-                    <td> <?php echo $row['security'] ?> </td>
-                    <td> <?php echo $row['rent'] ?> </td>
-                    <td> <?php echo $row['price'] ?> </td>
-                    <td> <?php echo $row['qty'] ?> </td>
+                    <td><?php echo htmlspecialchars($row['name']) ?></td>
+                    <td><?php echo htmlspecialchars($row['author']) ?></td>
+                    <td>₫<?php echo number_format($row['security']) ?></td>
+                    <td>₫<?php echo number_format($row['rent']) ?>/day</td>
+                    <td>₫<?php echo number_format($row['price']) ?></td>
+                    <td><?php echo $row['qty'] ?></td>
                     <td>
-                        <?php
-              if ($row['best_seller'] == 1) {
-                echo "<a class='link-white btn btn-primary px-2 py-1' href='?type=best_seller&operation=deactive&id=" . $row['id'] .
-                  "'>Most Viewed</a>&nbsp&nbsp";
-              } else {
-                echo "<a class='link-white btn btn-success px-2 py-1' href='?type=best_seller&operation=active&id=" . $row['id'] .
-                  "'>Normal</a>&nbsp&nbsp";
-              }
-              ?>
-                    </td>
-                    <td>
-                        <?php
-              echo "<a class='link-white btn btn-primary px-2 py-1' href='manageBooks.php?id=" . $row['id'] . "'>Edit</a>";
-              ?>
+                        <?php if ($row['best_seller'] == 1): ?>
+                            <a class="btn btn-primary btn-sm" href="?type=best_seller&operation=deactive&id=<?php echo $row['id'] ?>">
+                                Most Viewed
+                            </a>
+                        <?php else: ?>
+                            <a class="btn btn-success btn-sm" href="?type=best_seller&operation=active&id=<?php echo $row['id'] ?>">
+                                Normal
+                            </a>
+                        <?php endif; ?>
                     </td>
                     <td>
-                        <?php
-              echo "<a class='link-white btn btn-danger px-2 py-1' href='?type=delete&id=" . $row['id'] . "'>Delete</a>";
-              ?>
+                        <a class="btn btn-primary btn-sm" href="manageBooks.php?id=<?php echo $row['id'] ?>">Edit</a>
+                        <a class="btn btn-danger btn-sm" href="?type=delete&id=<?php echo $row['id'] ?>" 
+                           onclick="return confirm('Are you sure you want to delete this book?')">Delete</a>
                     </td>
                 </tr>
-                <?php } ?>
+                <?php endwhile; ?>
             </tbody>
         </table>
     </div>
