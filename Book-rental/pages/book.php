@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <?php
 $bookId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $getProduct = getProduct($con, '', '', $bookId);
@@ -84,4 +84,4 @@ document.title = "<?php echo $book['name'] ?> | Book Rental";
     </div>
 </div>
 
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

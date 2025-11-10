@@ -1,6 +1,6 @@
 <?php
-require('connection.php');
-require('function.php');
+require(__DIR__ . '/../config/connection.php');
+require(__DIR__ . '/function.php');
 ?>
 
 <!DOCTYPE html>

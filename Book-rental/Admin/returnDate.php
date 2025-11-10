@@ -1,5 +1,14 @@
-<?php require('topNav.php'); ?>
 <?php
+// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+    header('Location: login.php');
+    exit;
+}
+
 // Xử lý cập nhật trạng thái (nếu có)
 if (isset($_POST['status_id'])) {
     $orderId = (int)$_POST['orderId'];
@@ -20,6 +29,8 @@ if (isset($_POST['status_id'])) {
     header('Location: returnDate.php');
     exit;
 }
+
+require('topNav.php');
 
 // Lấy danh sách đơn hàng đã hủy hoặc đã trả
 $sql = "SELECT orders.*, name, status_name 

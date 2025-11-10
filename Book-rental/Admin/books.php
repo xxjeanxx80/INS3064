@@ -1,5 +1,14 @@
 <?php
-require('topNav.php');
+// Xử lý các action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+// Cần require connection và function trước để có $con và getSafeValue
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+    header('Location: login.php');
+    exit;
+}
 
 // Xử lý các action
 if (isset($_GET['type']) && $_GET['type'] != ' ') {
@@ -26,6 +35,9 @@ $sql = "SELECT books.*, categories.category
         LEFT JOIN categories ON books.category_id=categories.id 
         ORDER BY books.name ASC";
 $res = mysqli_query($con, $sql);
+
+// Bây giờ mới require topNav (đã có connection và function rồi, nên require_once sẽ skip)
+require('topNav.php');
 ?>
 <!--Main layout-->
 <main>
@@ -69,18 +81,14 @@ $res = mysqli_query($con, $sql);
                     <td><?php echo $row['qty'] ?></td>
                     <td>
                         <?php if ($row['best_seller'] == 1): ?>
-                            <a class="btn btn-primary btn-sm" href="?type=best_seller&operation=deactive&id=<?php echo $row['id'] ?>">
-                                Most Viewed
-                            </a>
+                            <a href="?type=best_seller&operation=deactive&id=<?php echo $row['id'] ?>">Most Viewed</a>
                         <?php else: ?>
-                            <a class="btn btn-success btn-sm" href="?type=best_seller&operation=active&id=<?php echo $row['id'] ?>">
-                                Normal
-                            </a>
+                            <a href="?type=best_seller&operation=active&id=<?php echo $row['id'] ?>">Normal</a>
                         <?php endif; ?>
                     </td>
                     <td>
-                        <a class="btn btn-primary btn-sm" href="manageBooks.php?id=<?php echo $row['id'] ?>">Edit</a>
-                        <a class="btn btn-danger btn-sm" href="?type=delete&id=<?php echo $row['id'] ?>" 
+                        <a href="manageBooks.php?id=<?php echo $row['id'] ?>">Edit</a> | 
+                        <a href="?type=delete&id=<?php echo $row['id'] ?>" 
                            onclick="return confirm('Are you sure you want to delete this book?')">Delete</a>
                     </td>
                 </tr>

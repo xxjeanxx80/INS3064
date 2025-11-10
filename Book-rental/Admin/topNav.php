@@ -1,6 +1,6 @@
 <?php
-require('connection.php');
-require('function.php');
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
 if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
 } else {
     header('location:login.php');
@@ -16,7 +16,7 @@ if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <title>Admin Panel</title>
     <!-- Icon -->
-    <link rel="shortcut icon" href="../Img/icon.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="../assets/img/icon.png" type="image/x-icon" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css" />
     <!-- Google Fonts Roboto -->
@@ -24,6 +24,54 @@ if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
     <!-- MDB -->
     <link rel="stylesheet" href="css/mdb.min.css" />
     <!-- Custom styles -->
+    <link rel="stylesheet" href="css/admin.css" />
+    <style>
+        .admin-logo {
+            transition: transform 0.3s ease;
+            padding: 5px;
+        }
+        .admin-logo:hover {
+            transform: scale(1.05);
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+        .navbar-brand {
+            margin-right: 20px;
+        }
+        .nav-link {
+            color: rgba(255,255,255,0.9) !important;
+            font-weight: 500;
+            padding: 8px 15px !important;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .nav-link:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: #fff !important;
+            transform: translateY(-2px);
+        }
+        .navbar-toggler {
+            border: none;
+            color: #fff;
+        }
+        .navbar-toggler:focus {
+            box-shadow: none;
+        }
+        .btn-group .btn-light {
+            background-color: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: #fff;
+        }
+        .btn-group .btn-light:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+        .dropdown-menu {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 
 <body>
@@ -35,8 +83,8 @@ if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
                 <i class="fas fa-bars"></i>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <a class="navbar-brand" href="#">
-                    <img src="..\Img\logo.png" height="30" alt="Logo" />
+                <a class="navbar-brand" href="../pages/index.php">
+                    <img src="../assets/img/logovnu.png" height="40" alt="Book Rental Logo" class="admin-logo" />
                 </a>
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">

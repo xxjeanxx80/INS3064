@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <?php
 $msg = '';
 if (isset($_POST['submit'])) {
@@ -79,4 +79,4 @@ document.title = "Contact Us | Book Rental";
         </div>
     </div>
 </div>
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

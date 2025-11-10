@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <?php
 if (!isset($_SESSION['USER_LOGIN'])) {
     header('Location: SignIn.php');
@@ -13,15 +13,15 @@ if (!$bookId || !$duration) {
     exit;
 }
 
-$getProduct = getProduct($con, '', '', $bookId);
-if (empty($getProduct)) {
+$booksList = getProduct($con, '', '', $bookId);
+if (empty($booksList)) {
     header('Location: index.php');
     exit;
 }
 
-$book = $getProduct[0];
-$totalRent = $book['rent'] * $duration;
-$totalPrice = $totalRent + $book['security'];
+$bookData = $booksList[0];
+$totalRent = $bookData['rent'] * $duration;
+$totalPrice = $totalRent + $bookData['security'];
 
 
 if (isset($_POST['submit'])) {
@@ -68,14 +68,14 @@ document.title = "Checkout | Book Rental";
                 <ul class="list-group mb-3 dark-background">
                     <li class="list-group-item d-flex justify-content-center fw-bold lh-sm">
                         <div>
-                            <h2 class="my-0 fs-5 fw-bold"><?php echo $book['name'] ?></h2>
+                            <h2 class="my-0 fs-5 fw-bold"><?php echo $bookData['name'] ?></h2>
                         </div>
                     </li>
                     <li class="list-group-item justify-content-start lh-sm">
-                        <p><span class="fw-bold">Rent Price</span> = ₫<?php echo $book['rent'] ?> Per Day</p>
+                        <p><span class="fw-bold">Rent Price</span> = ₫<?php echo $bookData['rent'] ?> Per Day</p>
                         <p><span class="fw-bold">Duration</span> = <?php echo $duration ?> Days</p>
                         <p><span class="fw-bold">Total Rent</span> = ₫<?php echo $totalRent ?></p>
-                        <p><span class="fw-bold">Security Deposit<span style="color: red"><sup>*</sup></span></span> = ₫<?php echo $book['security'] ?></p>
+                        <p><span class="fw-bold">Security Deposit<span style="color: red"><sup>*</sup></span></span> = ₫<?php echo $bookData['security'] ?></p>
                         <p><span class="fw-bold">Total price</span> = ₫<?php echo $totalPrice ?></p>
                     </li>
                 </ul>
@@ -171,4 +171,4 @@ document.title = "Checkout | Book Rental";
         })
 })()
 </script>
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

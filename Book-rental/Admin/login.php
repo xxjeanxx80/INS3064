@@ -1,6 +1,6 @@
 <?php
-require('connection.php');
-require('function.php');
+require(__DIR__ . '/../config/connection.php');
+require(__DIR__ . '/../includes/function.php');
 $msg = $passwordTemp = '';
 if (isset($_POST['submit'])) {
     $email = getSafeValue($con, $_POST['email']);
@@ -26,11 +26,11 @@ if (isset($_POST['submit'])) {
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Icon -->
-    <link rel="shortcut icon" href="../Img/icon.png" type="image/x-icon" />
+    <link rel="shortcut icon" href="../assets/img/icon.png" type="image/x-icon" />
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
     <!-- Default CSS -->
-    <link rel="stylesheet" href="../css/Style.css" />
+    <link rel="stylesheet" href="../assets/css/Style.css" />
     <!-- Bootstrap CSS -->
     <link id="theme" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet" />
     <!-- Font Awesome Fonts-->
@@ -74,7 +74,7 @@ if (isset($_POST['submit'])) {
                                     <button type="submit" name="submit" class="btn btn-primary  btn-lg">Login</button>
                                 </div>
                                 <div class="text-center mt-2">
-                                    <a href="../index.php" class="text-decoration-none text-black">Not An Admin?
+                                    <a href="../pages/index.php" class="text-decoration-none text-black">Not An Admin?
                                         <span style="color: blue">Click here</span></a>
                                 </div>
                             </form>

@@ -1,18 +1,24 @@
 <?php
-require('header.php');
-if (isset($_SESSION['USER_LOGIN'])) {
-  echo "<script>window.top.location='index.php';</script>";
+require(__DIR__ . '/../includes/header.php');
+if (!isset($_SESSION['USER_LOGIN'])) {
+  echo "<script>window.top.location='SignIn.php';</script>";
   exit;
 }
-?>
-<?php
+$userId = (int)$_SESSION['USER_ID'];
+$res = mysqli_query($con, "SELECT * FROM users WHERE id=$userId");
+$row = mysqli_fetch_assoc($res);
+$nameAuto = $row['name'];
+$emailAuto = $row['email'];
+$mobileAuto = $row['mobile'];
+$passwordCheck = $row['password'];
+
 $msg = $nameErr = $emailErr = '';
 
 if (isset($_POST['submit'])) {
     $name = getSafeValue($con, $_POST['name'] ?? '');
     $email = getSafeValue($con, $_POST['email'] ?? '');
     $mobile = getSafeValue($con, $_POST['mobile'] ?? '');
-    $password = $_POST['password'] ?? '';
+    $password = md5(getSafeValue($con, $_POST['password'] ?? ''));
     
     // Validation
     if (empty($name)) {
@@ -23,33 +29,26 @@ if (isset($_POST['submit'])) {
         $emailErr = "Please enter email address";
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $emailErr = "Please enter valid email address";
-    } elseif (empty($password)) {
-        $msg = "Please enter a password";
+    } elseif ($password != $passwordCheck) {
+        $msg = "Incorrect password";
     } else {
-        // Check if email exists
-        $check = mysqli_query($con, "SELECT id FROM users WHERE email='$email'");
-        if (mysqli_num_rows($check) > 0) {
-            $msg = "Email already exists. Please login";
+        // Update profile
+        $sql = "UPDATE users SET name='$name', email='$email', mobile='$mobile' WHERE id=$userId";
+        if (mysqli_query($con, $sql)) {
+            $_SESSION['USER_NAME'] = $name;
+            $msg = "Profile updated successfully. Changes will be visible next time you login.";
+            // Refresh data
+            $nameAuto = $name;
+            $emailAuto = $email;
+            $mobileAuto = $mobile;
         } else {
-            // Register user
-            $passwordHash = md5($password);
-            date_default_timezone_set('Asia/Kolkata');
-            $doj = date('Y-m-d H:i:s');
-            
-            $sql = "INSERT INTO users(name, email, mobile, password, doj) 
-                    VALUES ('$name', '$email', '$mobile', '$passwordHash', '$doj')";
-            if (mysqli_query($con, $sql)) {
-                header('Location: SignIn.php');
-                exit;
-            } else {
-                $msg = "Registration failed. Please try again.";
-            }
+            $msg = "Update failed. Please try again.";
         }
     }
 }
 ?>
 <script>
-document.title = "Register | Book Rental";
+document.title = "Profile | Book Rental";
 </script>
 <div class="container">
     <div class="row justify-content-center">
@@ -58,58 +57,52 @@ document.title = "Register | Book Rental";
                 <div class="row justify-content-center align-content-center">
                     <div class="col-md-10 col-lg-6 col-xl-5 order-2 order-lg-1">
                         <div class="d-flex justify-content-center mb-3 mb-lg-4">
-                            <h2>Registration</h2>
+                            <h2>Edit Profile</h2>
                         </div>
-                        <form class="mx-1 mx-md-4" method="post">
-                            <div class="d-flex align-items-center mb-4">
+                        <form class="mx-1 mx-md-4" method="post" autocomplete="off">
+                            <div class="d-flex align-items-center ">
                                 <i class="fas fa-user fa-lg me-3 fa-fw"></i>
                                 <div class="form-floating flex-fill">
                                     <input type="text" class="form-control" id="name" name="name" placeholder="name1234"
-                                        required />
+                                        value="<?php echo $nameAuto ?>" required />
                                     <label for="name">Name</label>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-4">
+                            <?php echo '<p style="color: red" class="ms-5">' . $nameErr . '</p>' ?>
+                            <div class="d-flex align-items-center mb-2">
                                 <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
                                 <div class="form-floating flex-fill">
                                     <input type="email" class="form-control" id="email" name="email"
-                                        placeholder="name@example.com" required />
+                                        placeholder="name@example.com" value="<?php echo $emailAuto ?>" required />
                                     <label for="email">Email address</label>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-4">
+                            <?php echo '<p style="color: red" class="ms-5">' . $emailErr . '</p>' ?>
+                            <div class="d-flex align-items-center mb-2">
                                 <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
                                 <div class="form-floating flex-fill">
                                     <input type="number" min="1111111111" max="9999999999" class="form-control"
-                                        id="mobile" name="mobile" placeholder="number" required />
+                                        id="mobile" name="mobile" placeholder="number" value="<?php echo $mobileAuto ?>"
+                                        required />
                                     <label for="mobile">Mobile Number(Without +91)</label>
                                 </div>
                             </div>
-                            <div class="d-flex align-items-center mb-4">
+                            <div class="d-flex align-items-center mt-4 mb-4">
                                 <i class="fas fa-key fa-lg me-3 fa-fw"></i>
                                 <div class="form-floating flex-fill">
                                     <input type="password" class="form-control" id="password" name="password"
-                                        placeholder="Password" required />
-                                    <label for="password">Password</label>
+                                        placeholder="Password" value="" required />
+                                    <label for="password">Enter current Password</label>
                                 </div>
                             </div>
                             <div id="error" class="text-center mb-3">
-                                <?php
-                echo $msg . "\n";
-                echo $nameErr . "\n";
-                echo $emailErr . "\n";
-                echo $mobileErr . "\n";
-                ?>
+                                <?php ?>
                             </div>
+                            <p style="color: red" class="ms-5"><?php echo $msg ?></p>
                             <div class="d-flex justify-content-center mb-3 mb-lg-4">
                                 <button type="submit" name="submit" id="submit" class="btn btn-primary">
-                                    Register
+                                    Submit
                                 </button>
-                            </div>
-                            <div style="text-align: center; margin-top: 30px">
-                                <a href="SignIn.php" class="text-decoration-none text-black">
-                                    Already have an account?
-                                    <span style="color: rgb(138, 110, 253)">Login</span></a>
                             </div>
                         </form>
                     </div>
@@ -117,17 +110,4 @@ document.title = "Register | Book Rental";
             </div>
         </div>
     </div>
-</div>
-<!--------------------------------------------------DARK MODE BUTTON----------------------------------------------------------->
-<div id="dark-btn">
-    <button onclick="DarkMode()" id="dark-btn" title="Toggle Light/Dark Mode">
-        <span><i class="fas fa-adjust fa-lg text-white"></i></span>
-    </button>
-    <script>
-    //Dark Mode
-    function DarkMode() {
-        let element = document.body;
-        element.classList.toggle("dark-mode");
-    }
-    </script>
 </div>

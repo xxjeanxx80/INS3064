@@ -1,5 +1,5 @@
 <?php
-require('header.php');
+require(__DIR__ . '/../includes/header.php');
 if (isset($_SESSION['USER_LOGIN'])) {
     header('Location: index.php');
     exit;

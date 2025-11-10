@@ -4,7 +4,6 @@ $category_id = '';
 $ISBN = '';
 $name = '';
 $author = '';
-$mrp = '';
 $security = '';
 $rent = '';
 $qty = '';
@@ -22,7 +21,6 @@ if ($id > 0) {
         $ISBN = $row['ISBN'];
         $name = $row['name'];
         $author = $row['author'];
-        $mrp = $row['mrp'] ?? '';
         $security = $row['security'];
         $rent = $row['rent'];
         $qty = $row['qty'];
@@ -39,7 +37,6 @@ if (isset($_POST['submit'])) {
     $ISBN = getSafeValue($con, $_POST['ISBN']);
     $name = getSafeValue($con, $_POST['name']);
     $author = getSafeValue($con, $_POST['author']);
-    $mrp = (int)($_POST['mrp'] ?? 0);
     $security = (int)$_POST['security'];
     $rent = (int)$_POST['rent'];
     $qty = (int)$_POST['qty'];
@@ -59,7 +56,7 @@ if (isset($_POST['submit'])) {
         if ($id > 0) {
             // Update existing book
             $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
-                    mrp=$mrp, security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
+                    security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
                     description='$description' WHERE id=$id";
         } else {
             // Insert new book
@@ -71,8 +68,8 @@ if (isset($_POST['submit'])) {
             }
             
             if (empty($msg)) {
-                $sql = "INSERT INTO books(category_id, ISBN, name, author, mrp, security, rent, qty, short_desc, description, status, img)
-                        VALUES ($category_id, '$ISBN', '$name', '$author', $mrp, $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
+                $sql = "INSERT INTO books(category_id, ISBN, name, author, security, rent, qty, short_desc, description, status, img)
+                        VALUES ($category_id, '$ISBN', '$name', '$author', $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
             }
         }
         
@@ -135,12 +132,6 @@ if (isset($_POST['submit'])) {
             <input type="text" name="author" value="<?php echo $author ?>" id="Book name" class="form-control"
                 required />
             <label class="form-label" for="Book name">Enter book author name</label>
-        </div>
-
-        <!-- MRP -->
-        <div class="form-outline mb-4 mx-5">
-            <input type="number" name="mrp" value="<?php echo $mrp ?>" id="Book name" class="form-control" required />
-            <label class="form-label" for="Book name">Enter MRP</label>
         </div>
 
         <!-- security -->

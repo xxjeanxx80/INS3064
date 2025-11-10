@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <?php
   $orderId = '';
   if (isset($_GET['orderId'])) {

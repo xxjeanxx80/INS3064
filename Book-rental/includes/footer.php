@@ -12,7 +12,7 @@
       <?php
         if (isset($_SESSION['USER_LOGIN'])) {
         } else {
-          echo '<li class="list-inline-item"><a href="Admin\login.php">Admin Login</a></li>';
+          echo '<li class="list-inline-item"><a href="../Admin/login.php">Admin Login</a></li>';
         }
       ?>
 

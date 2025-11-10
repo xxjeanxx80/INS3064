@@ -1,4 +1,4 @@
-<?php require('header.php');
+<?php require(__DIR__ . '/../includes/header.php');
 $categoryId = isset($_GET['id']) ? (int)$_GET['id'] : '';
 $getProduct = $categoryId ? getProduct($con, '', $categoryId) : [];
 
@@ -67,4 +67,4 @@ document.title = "Book Categories | Book Rental";
         </main>
     </div>
 </div>
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

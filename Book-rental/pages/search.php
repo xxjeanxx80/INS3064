@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <?php
 $search = isset($_GET['search']) ? $_GET['search'] : '';
 $getBook = searchBooks($con, $search);
@@ -41,4 +41,4 @@ document.title = "Book Categories | Book Rental";
     echo "No Book Found";
   } ?>
 </main>
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

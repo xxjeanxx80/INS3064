@@ -1,4 +1,4 @@
-<?php require('header.php') ?>
+<?php require(__DIR__ . '/../includes/header.php') ?>
 <script>
 document.title = "About Us | Book Rental";
 </script>
@@ -22,4 +22,4 @@ As we grow, we continue to expand beyond traditional book lending to offer a dig
 Learn More. Discover More. Grow Smarter!
     </div>
 </div>
-<?php require('footer.php') ?>
+<?php require(__DIR__ . '/../includes/footer.php') ?>

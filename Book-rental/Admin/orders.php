@@ -1,5 +1,15 @@
-<?php require('topNav.php'); ?>
 <?php
+// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+    header('Location: login.php');
+    exit;
+}
+
+// Xử lý cập nhật trạng thái đơn hàng
 if (isset($_POST['status_id'])) {
     $orderId = (int)$_POST['orderId'];
     $statusId = (int)$_POST['status_id'];
@@ -19,6 +29,8 @@ if (isset($_POST['status_id'])) {
     header('Location: orders.php');
     exit;
 }
+
+require('topNav.php');
 ?>
 <!--Main layout-->
 <main>

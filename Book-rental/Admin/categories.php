@@ -1,26 +1,32 @@
 <?php
-require('topNav.php');
+// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
 
-if (isset($_GET['type']) && $_GET['type'] != ' ') {
-  $type = getSafeValue($con, $_GET['type']);
-  if ($type == 'status') {
-    $operation = getSafeValue($con, $_GET['operation']);
-    $id = getSafeValue($con, $_GET['id']);
-    if ($operation == 'active') {
-      $status = '1';
-    } else {
-      $status = '0';
-    }
-    $updateStatusSql = "update categories set status='$status' where id='$id'";
-    mysqli_query($con, $updateStatusSql);
-  }
-
-  if ($type == 'delete') {
-    $id = getSafeValue($con, $_GET['id']);
-    $deleteSql = "delete from categories where id='$id'";
-    mysqli_query($con, $deleteSql);
-  }
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+    header('Location: login.php');
+    exit;
 }
+
+// Xử lý action
+if (isset($_GET['type']) && $_GET['type'] != ' ') {
+    $type = getSafeValue($con, $_GET['type']);
+    $id = (int)$_GET['id'];
+    
+    if ($type == 'status') {
+        $operation = getSafeValue($con, $_GET['operation']);
+        $status = ($operation == 'active') ? 1 : 0;
+        mysqli_query($con, "UPDATE categories SET status=$status WHERE id=$id");
+    } elseif ($type == 'delete') {
+        mysqli_query($con, "DELETE FROM categories WHERE id=$id");
+    }
+    
+    header('Location: categories.php');
+    exit;
+}
+
+require('topNav.php');
 
 $sql = "select * from categories order by category asc";
 $res = mysqli_query($con, $sql);
@@ -32,8 +38,7 @@ $res = mysqli_query($con, $sql);
         <hr>
         <br>
     </div>
-    <h5 class="btn btn-white ms-5 px-2 py-1 fs-6 "><a class="link-dark" href="manageCategories.php">Add
-            Categories</a></h5>
+    <h5 class="ms-5 fs-6"><a href="manageCategories.php">Add Categories</a></h5>
     <div class="">
         <table class="table">
             <thead>
@@ -45,29 +50,25 @@ $res = mysqli_query($con, $sql);
                 </tr>
             </thead>
             <tbody>
-                <?php
-        while ($row = mysqli_fetch_assoc($res)) { ?>
+                <?php while ($row = mysqli_fetch_assoc($res)): ?>
                 <tr>
-                    <td> <?php echo $row['category'] ?> </td>
+                    <td><?php echo htmlspecialchars($row['category']) ?></td>
                     <td>
-                        <?php
-              if ($row['status'] == 1) {
-                echo "<a class='link-white btn btn-success px-2 py-1' href='?type=status&operation=deactive&id=" . $row['id'] .
-                  "'>Active</a>&nbsp&nbsp";
-              } else {
-                echo "<a class='link-white btn btn-warning px-2 py-1' href='?type=status&operation=active&id=" . $row['id'] .
-                  "'>Inactive</a>&nbsp&nbsp";
-              }
-              ?>
+                        <?php if ($row['status'] == 1): ?>
+                            <a href="?type=status&operation=deactive&id=<?php echo $row['id'] ?>">Active</a>
+                        <?php else: ?>
+                            <a href="?type=status&operation=active&id=<?php echo $row['id'] ?>">Inactive</a>
+                        <?php endif; ?>
                     </td>
-                    <td> <?php echo "<a class='link-white btn btn-primary px-2 py-1' href='manageCategories.php?id=" . $row['id'] .
-                    "'>Edit</a>"; ?>
+                    <td>
+                        <a href="manageCategories.php?id=<?php echo $row['id'] ?>">Edit</a>
                     </td>
-                    <td> <?php echo "<a class='link-white btn btn-danger px-2 py-1' href='?type=delete&id=" . $row['id'] .
-                    "'>Delete</a>"; ?>
+                    <td>
+                        <a href="?type=delete&id=<?php echo $row['id'] ?>" 
+                           onclick="return confirm('Are you sure you want to delete this category?')">Delete</a>
                     </td>
                 </tr>
-                <?php } ?>
+                <?php endwhile; ?>
             </tbody>
         </table>
     </div>

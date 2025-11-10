@@ -1,51 +1,60 @@
 <?php
-require('topNav.php');
-$res = '';
+// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+    header('Location: login.php');
+    exit;
+}
+
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $categories = '';
 $msg = '';
+$res = '';
 
-if (isset($_GET['id']) && $_GET['id'] != '') {
-  $id = getSafeValue($con, $_GET['id']);
-  $sql = mysqli_query($con, "select * from categories where id='$id'");
-  $check = mysqli_num_rows($sql);
-  if ($check > 0) {
-    $row = mysqli_fetch_assoc($sql);
-    $categories = $row['category'];
-  } else {
-    echo "<script>window.location.href='categories.php';</script>";
-    exit;
-  }
+// Lấy thông tin category nếu đang edit
+if ($id > 0) {
+    $sql = mysqli_query($con, "SELECT * FROM categories WHERE id=$id");
+    if ($row = mysqli_fetch_assoc($sql)) {
+        $categories = $row['category'];
+    } else {
+        header('Location: categories.php');
+        exit;
+    }
 }
 
+// Xử lý submit
 if (isset($_POST['submit'])) {
-  $category = getSafeValue($con, $_POST['category']);
-  $sql = mysqli_query($con, "select * from categories where category='$category'");
-  $check = mysqli_num_rows($sql);
-  if ($check > 0) {
-    if (isset($_GET['id']) && $_GET['id'] != '') {
-      $getData = mysqli_fetch_assoc($sql);
-      if ($id == $getData['id']) {
-      } else {
-        $msg = "Category already exist";
-      }
-    } else {
-      $msg = "Category already exist";
+    $category = getSafeValue($con, $_POST['category']);
+    
+    // Check duplicate (trừ category hiện tại nếu đang edit)
+    $checkSql = mysqli_query($con, "SELECT id FROM categories WHERE category='$category'");
+    if (mysqli_num_rows($checkSql) > 0) {
+        $existing = mysqli_fetch_assoc($checkSql);
+        if (!$id || $existing['id'] != $id) {
+            $msg = "Category already exists";
+        }
     }
-  }
-  if ($msg == '') {
-    if (isset($_GET['id']) && $_GET['id'] != '') {
-      $sql = "update categories set category='$category' where id='$id' ";
-    } else {
-      $sql = "insert into categories(category, status) values('$category', '1')";
+    
+    if (empty($msg)) {
+        if ($id > 0) {
+            $sql = "UPDATE categories SET category='$category' WHERE id=$id";
+        } else {
+            $sql = "INSERT INTO categories(category, status) VALUES('$category', 1)";
+        }
+        
+        if (mysqli_query($con, $sql)) {
+            header('Location: categories.php');
+            exit;
+        } else {
+            $res = "Error: " . mysqli_error($con);
+        }
     }
-    if (mysqli_query($con, $sql)) {
-      echo "<script>window.location.href='categories.php';</script>";
-      exit;
-    } else {
-      $res = "Error";
-    }
-  }
 }
+
+require('topNav.php');
 
 ?>
 <main>

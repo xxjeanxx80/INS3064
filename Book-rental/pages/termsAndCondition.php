@@ -1,5 +1,5 @@
 <?php
-  require('header.php')
+  require(__DIR__ . '/../includes/header.php')
 ?>
 <script>
     document.title = "Terms And Conditions | Book Rental";
