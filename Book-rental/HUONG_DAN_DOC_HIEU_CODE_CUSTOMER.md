@@ -7,7 +7,8 @@
 4. [Chi Tiết Từng File](#chi-tiết-từng-file)
 5. [Database Schema Liên Quan](#database-schema-liên-quan)
 6. [Session Management](#session-management)
-7. [Các Function Hỗ Trợ](#các-function-hỗ-trợ)
+7. [Cookie Authentication (Remember Me)](#cookie-authentication-remember-me)
+8. [Các Function Hỗ Trợ](#các-function-hỗ-trợ)
 
 ---
 
@@ -148,6 +149,13 @@ define('BOOK_IMAGE_SITE_PATH', SITE_PATH . 'assets/img/books/');
 
 **Nội dung:**
 - Include `connection.php` và `function.php`
+- **Cookie Authentication Check:**
+  ```php
+  // Kiểm tra Remember Me token nếu chưa có session
+  if (!isset($_SESSION['USER_LOGIN'])) {
+      checkRememberToken($con); // Tự động đăng nhập nếu có cookie hợp lệ
+  }
+  ```
 - HTML head (CSS, Bootstrap, Font Awesome)
 - Navigation bar với:
   - Logo và menu (Home, Book Categories, Contact Us)
@@ -167,6 +175,11 @@ if (isset($_SESSION['USER_LOGIN'])) {
 **Session được sử dụng:**
 - `$_SESSION['USER_LOGIN']`: Kiểm tra đã login chưa
 - `$_SESSION['USER_NAME']`: Hiển thị tên user
+
+**Cookie được sử dụng:**
+- `remember_token`: Token để tự động đăng nhập (nếu có)
+- Tự động check khi load trang nếu chưa có session
+- Xem thêm phần [Cookie Authentication](#cookie-authentication-remember-me)
 
 ---
 
@@ -196,6 +209,15 @@ if (isset($_SESSION['USER_LOGIN'])) {
 #### `searchBooks($con, $searchKeyword)`
 - **Mục đích:** Tìm kiếm sách theo tên hoặc tác giả
 - **SQL:** `WHERE name LIKE '%keyword%' OR author LIKE '%keyword%'`
+
+#### Cookie Authentication Functions (Remember Me)
+- **`generateToken()`**: Tạo token ngẫu nhiên 64 ký tự
+- **`saveRememberToken($con, $userId)`**: Lưu token vào cookie và database
+- **`checkRememberToken($con)`**: Kiểm tra cookie và tự động đăng nhập
+- **`deleteRememberToken($con, $token)`**: Xóa token khỏi cookie và database
+- **`deleteAllUserTokens($con, $userId)`**: Xóa tất cả token của user
+
+**Xem chi tiết:** Phần [Cookie Authentication](#cookie-authentication-remember-me)
 
 ---
 
@@ -244,13 +266,24 @@ if (isset($_SESSION['USER_LOGIN'])) {
      $_SESSION['USER_ID'] = $row['id'];
      $_SESSION['USER_NAME'] = $row['name'];
      ```
+   - **Remember Me (Cookie):**
+     - Kiểm tra user có tick "Remember Me" không
+     - Nếu có → Gọi `saveRememberToken($con, $row['id'])` để lưu token vào cookie và database
+     - Token có thời hạn 30 ngày
    - Redirect:
      - Nếu có `$_SESSION['BeforeCheckoutLogin']` → Redirect đến checkout
      - Ngược lại → Redirect đến `index.php`
 
 4. **Nếu sai:** Hiển thị "Invalid Username/Password"
 
-**Database:** Bảng `users`
+**Database:** 
+- Bảng `users` (SELECT)
+- Bảng `user_tokens` (INSERT - nếu chọn Remember Me)
+
+**Lưu ý:** 
+- Form có checkbox "Remember Me" để user chọn
+- Nếu chọn Remember Me, token được lưu để tự động đăng nhập sau này
+- Xem thêm phần [Cookie Authentication](#cookie-authentication-remember-me) để hiểu rõ hơn
 
 ---
 
@@ -505,20 +538,41 @@ if (isset($_SESSION['USER_LOGIN'])) {
 ---
 
 ### 12. `pages/logout.php` - Đăng Xuất
-**Mục đích:** Xóa session và đăng xuất
+**Mục đích:** Xóa session, cookie và đăng xuất hoàn toàn
 
 **Flow:**
 ```php
+require(__DIR__ . '/../config/connection.php');
+require(__DIR__ . '/../includes/function.php');
+
 session_start();
+
+// Xóa token Remember Me nếu có
+if (isset($_COOKIE['remember_token'])) {
+    deleteRememberToken($con, $_COOKIE['remember_token']);
+}
+
+// Xóa session
 unset($_SESSION['USER_LOGIN']);
 unset($_SESSION['USER_ID']);
 unset($_SESSION['USER_NAME']);
 unset($_SESSION['BeforeCheckoutLogin']);
+
 header('location:index.php');
 die();
 ```
 
-**Đơn giản, chỉ xóa session và redirect.**
+**Xử lý:**
+1. Xóa token Remember Me khỏi cookie và database (nếu có)
+2. Xóa tất cả session variables
+3. Redirect về trang chủ
+
+**Database:**
+- Bảng `user_tokens` (DELETE - nếu có cookie)
+
+**Lưu ý:** 
+- Xóa cả cookie và session để đảm bảo user logout hoàn toàn
+- Sau khi logout, user phải đăng nhập lại (kể cả có Remember Me trước đó)
 
 ---
 
@@ -711,6 +765,29 @@ Lưu phản hồi từ customer
 
 ---
 
+### Bảng `user_tokens`
+Lưu token cho tính năng Remember Me (Cookie Authentication)
+
+| Cột | Kiểu | Mô tả |
+|-----|------|-------|
+| id | int(11) | ID (Primary Key, Auto Increment) |
+| user_id | int(11) | ID của user (Foreign Key → users.id) |
+| token | varchar(64) | Token ngẫu nhiên (Unique) |
+| expires_at | datetime | Thời gian hết hạn (30 ngày sau khi tạo) |
+| created_at | datetime | Thời gian tạo token |
+
+**Sử dụng trong:**
+- `SignIn.php`: INSERT (khi chọn Remember Me)
+- `header.php`: SELECT (kiểm tra token để tự động đăng nhập)
+- `logout.php`: DELETE (xóa token khi logout)
+
+**Lưu ý:** Token tự động hết hạn sau 30 ngày. Có thể dọn dẹp token hết hạn định kỳ:
+```sql
+DELETE FROM user_tokens WHERE expires_at < NOW();
+```
+
+---
+
 ## 🔐 SESSION MANAGEMENT
 
 ### Các Session Variable
@@ -755,6 +832,290 @@ Lưu phản hồi từ customer
     ↓ (Unset $_SESSION['BeforeCheckoutLogin'])
 [checkout.php - Hiển thị form thanh toán]
 ```
+
+---
+
+## 🍪 COOKIE AUTHENTICATION (REMEMBER ME)
+
+### Tổng Quan
+
+Hệ thống sử dụng **2 cơ chế xác thực**:
+1. **Session** - Đăng nhập tạm thời (hết hạn khi đóng trình duyệt)
+2. **Cookie (Remember Me)** - Đăng nhập lâu dài (30 ngày)
+
+### Sự Khác Biệt Giữa Session và Cookie
+
+| Đặc điểm | Session | Cookie (Remember Me) |
+|----------|---------|---------------------|
+| **Lưu ở đâu** | Server (trên máy chủ) | Client (trên trình duyệt) |
+| **Thời gian sống** | Đến khi đóng trình duyệt | 30 ngày (có thể tùy chỉnh) |
+| **Khi nào hết hạn** | Đóng trình duyệt | Sau 30 ngày hoặc logout |
+| **Mở tab mới** | ✅ Vẫn đăng nhập (cùng session) | ✅ Vẫn đăng nhập (cùng cookie) |
+| **Đóng trình duyệt** | ❌ Mất đăng nhập | ✅ Vẫn đăng nhập (cookie còn) |
+| **Mở lại sau vài ngày** | ❌ Phải đăng nhập lại | ✅ Tự động đăng nhập |
+
+### Khi Nào Cookie Phát Huy Tác Dụng?
+
+**Cookie Remember Me chỉ có tác dụng khi:**
+
+1. ✅ **Đóng TẤT CẢ trình duyệt và mở lại**
+   - Session đã mất
+   - Cookie vẫn còn → Tự động đăng nhập
+
+2. ✅ **Sau khi session hết hạn (thường sau 24-48h không dùng)**
+   - Session đã hết hạn
+   - Cookie vẫn còn → Tự động đăng nhập
+
+3. ✅ **Mở trình duyệt khác (nhưng cùng domain)**
+   - Session không chia sẻ giữa các trình duyệt
+   - Cookie có thể chia sẻ (tùy cấu hình) → Tự động đăng nhập
+
+**Cookie KHÔNG có tác dụng khi:**
+
+1. ❌ **Mở tab mới trong cùng trình duyệt**
+   - Session vẫn còn → Đã đăng nhập rồi
+   - Cookie không cần thiết trong trường hợp này
+
+2. ❌ **Chưa đóng trình duyệt**
+   - Session vẫn còn → Đã đăng nhập rồi
+   - Cookie chỉ là backup, chưa cần dùng
+
+### Cơ Chế Hoạt Động
+
+#### 1. Khi Đăng Nhập VỚI Remember Me
+
+```
+[User đăng nhập + tick "Remember Me"]
+    ↓
+[SignIn.php xử lý]
+    ↓
+[Tạo token ngẫu nhiên 64 ký tự]
+    ↓
+[Lưu vào 2 nơi:]
+    ├─→ Cookie: remember_token (30 ngày)
+    └─→ Database: user_tokens table
+    ↓
+[Set Session như bình thường]
+    ↓
+[User đã đăng nhập]
+```
+
+#### 2. Khi User Quay Lại Website
+
+```
+[User truy cập bất kỳ trang nào]
+    ↓
+[header.php được load]
+    ↓
+[Kiểm tra: Có session chưa?]
+    ├─→ CÓ session → Bỏ qua, không check cookie
+    └─→ CHƯA có session → Kiểm tra cookie
+         ↓
+    [Có cookie remember_token?]
+         ├─→ CÓ → Tìm token trong database
+         │        ↓
+         │    [Token hợp lệ và chưa hết hạn?]
+         │        ├─→ CÓ → Tự động set session → Đăng nhập
+         │        └─→ KHÔNG → Xóa cookie
+         └─→ KHÔNG → Không làm gì
+```
+
+#### 3. Khi Logout
+
+```
+[User click Logout]
+    ↓
+[logout.php xử lý]
+    ↓
+[Xóa token khỏi database]
+    ↓
+[Xóa cookie]
+    ↓
+[Xóa session]
+    ↓
+[User đã logout hoàn toàn]
+```
+
+### Database Schema
+
+#### Bảng `user_tokens`
+
+Lưu token cho tính năng Remember Me
+
+| Cột | Kiểu | Mô tả |
+|-----|------|-------|
+| id | int(11) | ID (Primary Key, Auto Increment) |
+| user_id | int(11) | ID của user (Foreign Key → users.id) |
+| token | varchar(64) | Token ngẫu nhiên (Unique) |
+| expires_at | datetime | Thời gian hết hạn (30 ngày sau khi tạo) |
+| created_at | datetime | Thời gian tạo token |
+
+**Sử dụng trong:**
+- `SignIn.php`: INSERT (khi chọn Remember Me)
+- `header.php`: SELECT (kiểm tra token)
+- `logout.php`: DELETE (xóa token)
+
+### Các Function Liên Quan
+
+#### `generateToken()`
+- **Mục đích:** Tạo token ngẫu nhiên 64 ký tự
+- **Cách hoạt động:** `bin2hex(random_bytes(32))`
+- **Dùng cho:** Tạo token mới khi đăng nhập với Remember Me
+
+#### `saveRememberToken($con, $userId)`
+- **Mục đích:** Lưu token vào cookie và database
+- **Tham số:**
+  - `$con`: Kết nối database
+  - `$userId`: ID của user
+- **Xử lý:**
+  1. Tạo token mới
+  2. Tính thời gian hết hạn (30 ngày)
+  3. Lưu vào database
+  4. Lưu vào cookie (30 ngày)
+- **Dùng cho:** `SignIn.php` khi user chọn Remember Me
+
+#### `checkRememberToken($con)`
+- **Mục đích:** Kiểm tra cookie và tự động đăng nhập
+- **Tham số:** `$con`: Kết nối database
+- **Xử lý:**
+  1. Kiểm tra đã có session chưa → Nếu có thì bỏ qua
+  2. Kiểm tra có cookie `remember_token` không
+  3. Tìm token trong database
+  4. Kiểm tra token còn hạn (expires_at > NOW())
+  5. Nếu hợp lệ → Set session tự động
+  6. Nếu không hợp lệ → Xóa cookie
+- **Dùng cho:** `header.php` (tự động gọi khi load trang)
+
+#### `deleteRememberToken($con, $token)`
+- **Mục đích:** Xóa token khỏi cookie và database
+- **Tham số:**
+  - `$con`: Kết nối database
+  - `$token`: Token cần xóa
+- **Xử lý:**
+  1. Xóa token khỏi database
+  2. Xóa cookie
+- **Dùng cho:** `logout.php`
+
+#### `deleteAllUserTokens($con, $userId)`
+- **Mục đích:** Xóa tất cả token của user (khi đổi password)
+- **Tham số:**
+  - `$con`: Kết nối database
+  - `$userId`: ID của user
+- **Dùng cho:** Khi cần logout tất cả thiết bị của user
+
+### Ví Dụ Thực Tế
+
+#### Scenario 1: Đăng nhập KHÔNG Remember Me
+```
+1. User đăng nhập (không tick Remember Me)
+2. Mở tab mới → ✅ Vẫn đăng nhập (session còn)
+3. Đóng trình duyệt
+4. Mở lại → ❌ Phải đăng nhập lại (session đã mất)
+```
+
+#### Scenario 2: Đăng nhập CÓ Remember Me
+```
+1. User đăng nhập (tick Remember Me)
+2. Mở tab mới → ✅ Vẫn đăng nhập (session còn)
+3. Đóng trình duyệt
+4. Mở lại → ✅ Tự động đăng nhập (cookie tự động tạo session)
+5. Sau 30 ngày → ❌ Phải đăng nhập lại (cookie hết hạn)
+```
+
+#### Scenario 3: Logout
+```
+1. User đăng nhập với Remember Me
+2. Click Logout
+3. Cookie và Session đều bị xóa
+4. Mở lại → ❌ Phải đăng nhập lại
+```
+
+### Code Flow Chi Tiết
+
+#### Trong `header.php`:
+
+```php
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['USER_LOGIN'])) {
+    checkRememberToken($con); // Tự động đăng nhập nếu có cookie hợp lệ
+}
+```
+
+**Giải thích:**
+- Chỉ check cookie khi **chưa có session**
+- Nếu có session rồi → Không cần check cookie
+- Nếu có cookie hợp lệ → Tự động set session
+
+#### Trong `SignIn.php`:
+
+```php
+if ($res && mysqli_num_rows($res) > 0) {
+    // Set session
+    $_SESSION['USER_LOGIN'] = 'yes';
+    $_SESSION['USER_ID'] = $row['id'];
+    $_SESSION['USER_NAME'] = $row['name'];
+    
+    // Nếu chọn Remember Me, lưu token
+    if ($rememberMe) {
+        saveRememberToken($con, $row['id']);
+    }
+}
+```
+
+**Giải thích:**
+- Luôn set session khi đăng nhập thành công
+- Chỉ lưu cookie nếu user chọn Remember Me
+- Cookie là backup, session vẫn là chính
+
+#### Trong `logout.php`:
+
+```php
+// Xóa token Remember Me nếu có
+if (isset($_COOKIE['remember_token'])) {
+    deleteRememberToken($con, $_COOKIE['remember_token']);
+}
+
+// Xóa session
+unset($_SESSION['USER_LOGIN']);
+unset($_SESSION['USER_ID']);
+unset($_SESSION['USER_NAME']);
+```
+
+**Giải thích:**
+- Xóa cả cookie và session khi logout
+- Đảm bảo user logout hoàn toàn
+
+### Lưu Ý Quan Trọng
+
+1. **Session là chính, Cookie là phụ:**
+   - Session luôn được ưu tiên
+   - Cookie chỉ dùng khi session không có
+
+2. **Cookie không thay thế Session:**
+   - Cookie chỉ giúp tự động tạo session
+   - Sau khi có session từ cookie, hệ thống dùng session như bình thường
+
+3. **Bảo mật:**
+   - Token ngẫu nhiên 64 ký tự (khó đoán)
+   - Token có thời gian hết hạn
+   - Cookie có flag HttpOnly (chống XSS)
+   - Token lưu trong database (có thể xóa khi cần)
+
+4. **Performance:**
+   - Chỉ check cookie khi chưa có session
+   - Không ảnh hưởng đến hiệu suất khi đã có session
+
+### Tóm Tắt
+
+**Cookie Remember Me giúp:**
+- ✅ User không cần đăng nhập lại sau khi đóng trình duyệt
+- ✅ Tự động đăng nhập khi quay lại website (trong 30 ngày)
+- ✅ Trải nghiệm tốt hơn cho user
+
+**Cookie Remember Me KHÔNG:**
+- ❌ Thay thế Session (chỉ giúp tạo session tự động)
+- ❌ Có tác dụng khi session còn (vì session được ưu tiên)
+- ❌ Làm chậm website (chỉ check khi cần)
 
 ---
 
