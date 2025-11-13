@@ -9,6 +9,8 @@ $msg = '';
 if (isset($_POST['submit'])) {
     $email = getSafeValue($con, $_POST['email']);
     $password = md5(getSafeValue($con, $_POST['password']));
+    $rememberMe = isset($_POST['remember_me']) ? true : false;
+    
     $sql = "SELECT * FROM users WHERE email='$email' AND password='$password'";
     $res = mysqli_query($con, $sql);
     
@@ -17,6 +19,11 @@ if (isset($_POST['submit'])) {
         $_SESSION['USER_LOGIN'] = 'yes';
         $_SESSION['USER_ID'] = $row['id'];
         $_SESSION['USER_NAME'] = $row['name'];
+        
+        // Nếu chọn Remember Me, lưu token
+        if ($rememberMe) {
+            saveRememberToken($con, $row['id']);
+        }
         
         $redirect = $_SESSION['BeforeCheckoutLogin'] ?? 'index.php';
         unset($_SESSION['BeforeCheckoutLogin']);
@@ -56,6 +63,14 @@ document.title = "Login | Book Rental";
                                     <input type="password" name="password" class="form-control" id="Password"
                                         placeholder="Password" required />
                                     <label for="Password">Password</label>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me" value="1">
+                                    <label class="form-check-label" for="remember_me">
+                                        Remember Me
+                                    </label>
                                 </div>
                             </div>
                             <div id="error" class="text-center mb-3" style="color: red">

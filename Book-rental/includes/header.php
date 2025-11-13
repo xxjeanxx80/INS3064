@@ -1,6 +1,11 @@
 <?php
 require(__DIR__ . '/../config/connection.php');
 require(__DIR__ . '/function.php');
+
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['USER_LOGIN'])) {
+    checkRememberToken($con);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
