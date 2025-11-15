@@ -7,10 +7,11 @@ if (isset($_SESSION['USER_LOGIN'])) {
 
 $msg = '';
 if (isset($_POST['submit'])) {
-    $email = getSafeValue($con, $_POST['email']);
-    $password = md5(getSafeValue($con, $_POST['password']));
+    $email = trim($_POST['email']);
+    $password = md5(trim($_POST['password']));
     $rememberMe = isset($_POST['remember_me']) ? true : false;
     
+    $email = mysqli_real_escape_string($con, $email);
     $sql = "SELECT * FROM users WHERE email='$email' AND password='$password'";
     $res = mysqli_query($con, $sql);
     

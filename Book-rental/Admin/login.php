@@ -1,16 +1,40 @@
 <?php
 require(__DIR__ . '/../config/connection.php');
 require(__DIR__ . '/../includes/function.php');
-$msg = $passwordTemp = '';
+
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
+// Nếu đã đăng nhập, chuyển đến categories.php
+if (isset($_SESSION['ADMIN_LOGIN'])) {
+    header('location:categories.php');
+    die();
+}
+
+$msg = '';
 if (isset($_POST['submit'])) {
-    $email = getSafeValue($con, $_POST['email']);
-    $password = getSafeValue($con, $_POST['password']);
-    $sql = "select * from admin where email='$email' and password='$password'";
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+    $rememberMe = isset($_POST['remember_me']) ? true : false;
+    
+    // Hash password bằng MD5 (giống user)
+    $passwordHash = md5($password);
+    
+    $sql = "SELECT * FROM admin WHERE email='$email' AND password='$passwordHash'";
     $res = mysqli_query($con, $sql);
-    $count = mysqli_num_rows($res);
-    if ($count > 0) {
+    
+    if ($res && mysqli_num_rows($res) > 0) {
+        $row = mysqli_fetch_assoc($res);
         $_SESSION['ADMIN_LOGIN'] = 'yes';
         $_SESSION['ADMIN_email'] = $email;
+        
+        // Nếu chọn Remember Me, lưu token
+        if ($rememberMe) {
+            saveAdminRememberToken($con, $row['id']);
+        }
+        
         header('location:categories.php');
         die();
     } else {
@@ -67,7 +91,15 @@ if (isset($_POST['submit'])) {
                                         <label for="Password">Password</label>
                                     </div>
                                 </div>
-                                <div class="mt-2 mb-1 d-flex justify-content-center field_error">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="form-check ms-5">
+                                        <input class="form-check-input" type="checkbox" name="remember_me" id="remember_me" value="1">
+                                        <label class="form-check-label" for="remember_me">
+                                            Remember Me
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mt-2 mb-1 d-flex justify-content-center field_error" style="color: red">
                                     <?php echo $msg ?>
                                 </div>
                                 <div class="d-flex justify-content-center mt-3 mb-3 mb-lg-4">

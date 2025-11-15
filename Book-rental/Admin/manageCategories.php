@@ -1,10 +1,15 @@
 <?php
-// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+// Xử lý logic TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
 require_once(__DIR__ . '/../config/connection.php');
 require_once(__DIR__ . '/../includes/function.php');
 
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
 // Kiểm tra đăng nhập
-if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
     header('Location: login.php');
     exit;
 }
@@ -14,8 +19,8 @@ $categories = '';
 $msg = '';
 $res = '';
 
-// Lấy thông tin category nếu đang edit
-if ($id > 0) {
+// Lấy thông tin category nếu đang edit (chỉ khi không có POST submit - tránh mất dữ liệu khi có lỗi)
+if ($id > 0 && !isset($_POST['submit'])) {
     $sql = mysqli_query($con, "SELECT * FROM categories WHERE id=$id");
     if ($row = mysqli_fetch_assoc($sql)) {
         $categories = $row['category'];
@@ -25,9 +30,10 @@ if ($id > 0) {
     }
 }
 
-// Xử lý submit
+// Xử lý submit form
 if (isset($_POST['submit'])) {
-    $category = getSafeValue($con, $_POST['category']);
+    $category = trim($_POST['category']);
+    $categories = $category; // Giữ giá trị từ POST để hiển thị lại trong form nếu có lỗi
     
     // Check duplicate (trừ category hiện tại nếu đang edit)
     $checkSql = mysqli_query($con, "SELECT id FROM categories WHERE category='$category'");
@@ -38,6 +44,7 @@ if (isset($_POST['submit'])) {
         }
     }
     
+    // Thực hiện query và redirect (nếu không có lỗi)
     if (empty($msg)) {
         if ($id > 0) {
             $sql = "UPDATE categories SET category='$category' WHERE id=$id";
@@ -54,6 +61,7 @@ if (isset($_POST['submit'])) {
     }
 }
 
+// Sau khi xử lý xong tất cả logic, mới require topNav để hiển thị HTML
 require('topNav.php');
 
 ?>

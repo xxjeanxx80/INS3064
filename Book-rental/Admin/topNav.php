@@ -1,8 +1,14 @@
 <?php
 require_once(__DIR__ . '/../config/connection.php');
 require_once(__DIR__ . '/../includes/function.php');
-if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
-} else {
+
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
     header('location:login.php');
     die();
 }
@@ -97,13 +103,7 @@ if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
                         <a class="nav-link" href="orders.php">Orders</a>
                     </li>
                     <li class="nav-item">
-                        <a href="returnDate.php" class="nav-link">Return Date</a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" href="users.php">Users</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="feedback.php">Feedbacks</a>
                     </li>
                 </ul>
             </div>
@@ -114,7 +114,7 @@ if (isset($_SESSION['ADMIN_LOGIN']) && $_SESSION['ADMIN_LOGIN'] != ' ') {
                             <button type="button" class="btn btn-light dropdown-toggle" data-mdb-toggle="dropdown" 
                                     aria-expanded="false">' . $userName . '</button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item" href="logout.php">Logout</a></li>
+                                            <li><button class="dropdown-item" onclick="window.location='logout.php'">Logout</button></li>
                                     </ul>
                         </div>';
                 ?>

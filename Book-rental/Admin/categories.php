@@ -3,19 +3,24 @@
 require_once(__DIR__ . '/../config/connection.php');
 require_once(__DIR__ . '/../includes/function.php');
 
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
 // Kiểm tra đăng nhập
-if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
     header('Location: login.php');
     exit;
 }
 
 // Xử lý action
 if (isset($_GET['type']) && $_GET['type'] != ' ') {
-    $type = getSafeValue($con, $_GET['type']);
+    $type = trim($_GET['type']);
     $id = (int)$_GET['id'];
     
     if ($type == 'status') {
-        $operation = getSafeValue($con, $_GET['operation']);
+        $operation = trim($_GET['operation']);
         $status = ($operation == 'active') ? 1 : 0;
         mysqli_query($con, "UPDATE categories SET status=$status WHERE id=$id");
     } elseif ($type == 'delete') {

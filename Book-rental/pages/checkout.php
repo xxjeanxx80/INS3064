@@ -25,10 +25,16 @@ $totalPrice = $totalRent + $bookData['security'];
 
 
 if (isset($_POST['submit'])) {
-    $address = getSafeValue($con, $_POST['address']);
-    $address2 = getSafeValue($con, $_POST['address2'] ?? '');
+    $address = trim($_POST['address']);
+    $address2 = trim($_POST['address2'] ?? '');
     $pin = (int)$_POST['pin'];
-    $paymentMethod = getSafeValue($con, $_POST['paymentMethod']);
+    $paymentMethod = trim($_POST['paymentMethod']);
+    
+    // Escape for SQL
+    $address = mysqli_real_escape_string($con, $address);
+    $address2 = mysqli_real_escape_string($con, $address2);
+    $paymentMethod = mysqli_real_escape_string($con, $paymentMethod);
+    
     $userId = (int)$_SESSION['USER_ID'];
     $paymentStatus = ($paymentMethod == 'COD') ? 'success' : 'pending';
     

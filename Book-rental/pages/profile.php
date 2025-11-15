@@ -15,10 +15,10 @@ $passwordCheck = $row['password'];
 $msg = $nameErr = $emailErr = '';
 
 if (isset($_POST['submit'])) {
-    $name = getSafeValue($con, $_POST['name'] ?? '');
-    $email = getSafeValue($con, $_POST['email'] ?? '');
-    $mobile = getSafeValue($con, $_POST['mobile'] ?? '');
-    $password = md5(getSafeValue($con, $_POST['password'] ?? ''));
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $mobile = trim($_POST['mobile'] ?? '');
+    $password = md5(trim($_POST['password'] ?? ''));
     
     // Validation
     if (empty($name)) {
@@ -32,6 +32,11 @@ if (isset($_POST['submit'])) {
     } elseif ($password != $passwordCheck) {
         $msg = "Incorrect password";
     } else {
+        // Escape for SQL
+        $name = mysqli_real_escape_string($con, $name);
+        $email = mysqli_real_escape_string($con, $email);
+        $mobile = mysqli_real_escape_string($con, $mobile);
+        
         // Update profile
         $sql = "UPDATE users SET name='$name', email='$email', mobile='$mobile' WHERE id=$userId";
         if (mysqli_query($con, $sql)) {

@@ -1,5 +1,20 @@
 <?php
-require('topNav.php');
+// Xử lý logic TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
+
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
+    header('Location: login.php');
+    exit;
+}
+
+// Khởi tạo biến
 $category_id = '';
 $ISBN = '';
 $name = '';
@@ -13,8 +28,24 @@ $short_desc = '';
 $error = '';
 $msg = '';
 
+// Lấy ID từ GET (nếu đang edit)
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+// Biến để lưu ảnh cũ khi edit (cần lấy trước để dùng khi có lỗi hoặc không upload ảnh mới)
+$currentImg = '';
 if ($id > 0) {
+    $oldImgSql = mysqli_query($con, "SELECT img FROM books WHERE id=$id");
+    if ($oldImgRow = mysqli_fetch_assoc($oldImgSql)) {
+        $currentImg = $oldImgRow['img'];
+    } else {
+        // Book không tồn tại, redirect về books.php
+        header('Location: books.php');
+        exit;
+    }
+}
+
+// Lấy thông tin book nếu đang edit (chỉ khi không có POST submit - tránh mất dữ liệu khi có lỗi)
+if ($id > 0 && !isset($_POST['submit'])) {
     $sql = mysqli_query($con, "SELECT * FROM books WHERE id=$id");
     if ($row = mysqli_fetch_assoc($sql)) {
         $category_id = $row['category_id'];
@@ -26,22 +57,21 @@ if ($id > 0) {
         $qty = $row['qty'];
         $short_desc = $row['short_desc'];
         $description = $row['description'];
-    } else {
-        header('Location: books.php');
-        exit;
+        $img = $row['img']; // Lưu ảnh cũ để hiển thị trong form
     }
 }
 
+// Xử lý submit form
 if (isset($_POST['submit'])) {
     $category_id = (int)$_POST['category_id'];
-    $ISBN = getSafeValue($con, $_POST['ISBN']);
-    $name = getSafeValue($con, $_POST['name']);
-    $author = getSafeValue($con, $_POST['author']);
+    $ISBN = trim($_POST['ISBN']);
+    $name = trim($_POST['name']);
+    $author = trim($_POST['author']);
     $security = (int)$_POST['security'];
     $rent = (int)$_POST['rent'];
     $qty = (int)$_POST['qty'];
-    $short_desc = getSafeValue($con, $_POST['short_desc']);
-    $description = getSafeValue($con, $_POST['description']);
+    $short_desc = trim($_POST['short_desc']);
+    $description = trim($_POST['description']);
     
     // Check if book name already exists (except current book)
     $checkSql = mysqli_query($con, "SELECT id FROM books WHERE name='$name'");
@@ -55,32 +85,52 @@ if (isset($_POST['submit'])) {
     if (empty($msg)) {
         if ($id > 0) {
             // Update existing book
-            $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
-                    security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
-                    description='$description' WHERE id=$id";
-        } else {
-            // Insert new book
+            // Nếu có upload ảnh mới, sử dụng ảnh mới
             if (!empty($_FILES['img']['name'])) {
                 $img = time() . '_' . $_FILES['img']['name'];
                 move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
+                $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
+                        security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
+                        description='$description', img='$img' WHERE id=$id";
+            } else {
+                // Không upload ảnh mới, giữ nguyên ảnh cũ (không cập nhật field img)
+                $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
+                        security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
+                        description='$description' WHERE id=$id";
+                // Giữ lại ảnh cũ để hiển thị trong form
+                $img = $currentImg;
+            }
+        } else {
+            // Insert new book - bắt buộc phải có ảnh
+            if (!empty($_FILES['img']['name'])) {
+                $img = time() . '_' . $_FILES['img']['name'];
+                move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
+                $sql = "INSERT INTO books(category_id, ISBN, name, author, security, rent, qty, short_desc, description, status, img)
+                        VALUES ($category_id, '$ISBN', '$name', '$author', $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
             } else {
                 $msg = "Please upload book image";
             }
-            
-            if (empty($msg)) {
-                $sql = "INSERT INTO books(category_id, ISBN, name, author, security, rent, qty, short_desc, description, status, img)
-                        VALUES ($category_id, '$ISBN', '$name', '$author', $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
-            }
         }
         
-        if (empty($msg) && mysqli_query($con, $sql)) {
-            header('Location: books.php');
-            exit;
-        } else {
-            $error = "Error: " . mysqli_error($con);
+        // Thực hiện query và redirect (nếu không có lỗi)
+        if (empty($msg)) {
+            if (mysqli_query($con, $sql)) {
+                header('Location: books.php');
+                exit;
+            } else {
+                $error = "Error: " . mysqli_error($con);
+            }
         }
     }
+    
+    // Nếu có lỗi và đang edit, giữ lại ảnh cũ để hiển thị trong form
+    if (!empty($msg) && $id > 0 && empty($img) && !empty($currentImg)) {
+        $img = $currentImg;
+    }
 }
+
+// Sau khi xử lý xong tất cả logic, mới require topNav để hiển thị HTML
+require('topNav.php');
 ?>
 <main>
     <div class="container pt-4">

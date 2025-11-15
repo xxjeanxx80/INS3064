@@ -6,12 +6,12 @@ if (isset($_SESSION['USER_LOGIN'])) {
 }
 ?>
 <?php
-$msg = $nameErr = $emailErr = '';
+$msg = $nameErr = $emailErr = $mobileErr = '';
 
 if (isset($_POST['submit'])) {
-    $name = getSafeValue($con, $_POST['name'] ?? '');
-    $email = getSafeValue($con, $_POST['email'] ?? '');
-    $mobile = getSafeValue($con, $_POST['mobile'] ?? '');
+    $name = trim($_POST['name'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $mobile = trim($_POST['mobile'] ?? '');
     $password = $_POST['password'] ?? '';
     
     // Validation
@@ -26,6 +26,11 @@ if (isset($_POST['submit'])) {
     } elseif (empty($password)) {
         $msg = "Please enter a password";
     } else {
+        // Escape for SQL
+        $name = mysqli_real_escape_string($con, $name);
+        $email = mysqli_real_escape_string($con, $email);
+        $mobile = mysqli_real_escape_string($con, $mobile);
+        
         // Check if email exists
         $check = mysqli_query($con, "SELECT id FROM users WHERE email='$email'");
         if (mysqli_num_rows($check) > 0) {

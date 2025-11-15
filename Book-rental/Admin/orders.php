@@ -1,10 +1,15 @@
 <?php
-// Xử lý action TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+// Xử lý logic TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
 require_once(__DIR__ . '/../config/connection.php');
 require_once(__DIR__ . '/../includes/function.php');
 
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
+}
+
 // Kiểm tra đăng nhập
-if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] == ' ') {
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
     header('Location: login.php');
     exit;
 }

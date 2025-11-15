@@ -1,15 +1,35 @@
 <?php
-require('topNav.php');
+// Xử lý logic TRƯỚC KHI require topNav (để tránh lỗi headers already sent)
+require_once(__DIR__ . '/../config/connection.php');
+require_once(__DIR__ . '/../includes/function.php');
 
-if (isset($_GET['type']) && $_GET['type'] != ' ') {
-  $type = getSafeValue($con, $_GET['type']);
-
-  if ($type == 'delete') {
-    $id = getSafeValue($con, $_GET['id']);
-    $deleteSql = "delete from users where id='$id'";
-    mysqli_query($con, $deleteSql);
-  }
+// Kiểm tra Remember Me token nếu chưa có session
+if (!isset($_SESSION['ADMIN_LOGIN'])) {
+    checkAdminRememberToken($con);
 }
+
+// Kiểm tra đăng nhập
+if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
+    header('Location: login.php');
+    exit;
+}
+
+// Xử lý action (delete user)
+if (isset($_GET['type']) && $_GET['type'] != ' ') {
+    $type = trim($_GET['type']);
+    
+    if ($type == 'delete') {
+        $id = (int)$_GET['id'];
+        $deleteSql = "DELETE FROM users WHERE id=$id";
+        mysqli_query($con, $deleteSql);
+        // Redirect để tránh resubmit form
+        header('Location: users.php');
+        exit;
+    }
+}
+
+// Sau khi xử lý xong tất cả logic, mới require topNav để hiển thị HTML
+require('topNav.php');
 
 $sql = "select * from users order by id desc";
 $res = mysqli_query($con, $sql);

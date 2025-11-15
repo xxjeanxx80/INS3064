@@ -40,9 +40,6 @@ require(__DIR__ . '/function.php');
                     <li class="nav-item ">
                         <a class="nav-link " href="bookCategory.php">Book Categories</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="contactUs.php">Contact Us</a>
-                    </li>
             </div>
             </div>
         </nav>

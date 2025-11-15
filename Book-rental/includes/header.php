@@ -49,9 +49,6 @@ if (!isset($_SESSION['USER_LOGIN'])) {
                     <li class="nav-item ">
                         <a class="nav-link " href="bookCategory.php">Book Categories</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="contactUs.php">Contact Us</a>
-                    </li>
                     <?php
                     if (isset($_SESSION['USER_LOGIN'])) {
                         echo '<li class="nav-item">
