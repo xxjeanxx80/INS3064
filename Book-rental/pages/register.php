@@ -85,9 +85,9 @@ document.title = "Register | Book Rental";
                             <div class="d-flex align-items-center mb-4">
                                 <i class="fas fa-envelope fa-lg me-3 fa-fw"></i>
                                 <div class="form-floating flex-fill">
-                                    <input type="number" min="1111111111" max="9999999999" class="form-control"
+                                    <input type="number" min="111111111" max="9999999999" class="form-control"
                                         id="mobile" name="mobile" placeholder="number" required />
-                                    <label for="mobile">Mobile Number(Without +91)</label>
+                                    <label for="mobile">Mobile Number(Enter +84)</label>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-4">

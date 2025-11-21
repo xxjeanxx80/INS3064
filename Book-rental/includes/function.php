@@ -96,7 +96,7 @@ function getBook($con, $limitCount = 8)
 function searchBooks($con, $searchKeyword)
 {
   $searchKeyword = trim($searchKeyword);
-  $query = "SELECT * FROM books WHERE status = 1 
+  $query = "SELECT * FROM books WHERE status = 1
           AND (name LIKE '%$searchKeyword%' OR author LIKE '%$searchKeyword%')";
   $queryResult = mysqli_query($con, $query);
   

@@ -38,7 +38,7 @@ if (isset($_GET['type']) && $_GET['type'] != ' ') {
 $sql = "SELECT books.*, categories.category 
         FROM books 
         LEFT JOIN categories ON books.category_id=categories.id 
-        ORDER BY books.name ASC";
+        ORDER BY books.id ASC";
 $res = mysqli_query($con, $sql);
 
 // Bây giờ mới require topNav (đã có connection và function rồi, nên require_once sẽ skip)
@@ -56,6 +56,7 @@ require('topNav.php');
         <table class="table">
             <thead>
                 <tr>
+                    <th>id</th>
                     <th>ISBN</th>
                     <th>Category</th>
                     <th>img</th>
@@ -72,6 +73,7 @@ require('topNav.php');
             <tbody>
                 <?php while ($row = mysqli_fetch_assoc($res)): ?>
                 <tr>
+                    <td><?php echo htmlspecialchars($row['id']) ?></td>
                     <td><?php echo htmlspecialchars($row['ISBN']) ?></td>
                     <td><?php echo htmlspecialchars($row['category'] ?? 'N/A') ?></td>
                     <td>

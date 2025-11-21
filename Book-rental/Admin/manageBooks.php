@@ -73,12 +73,34 @@ if (isset($_POST['submit'])) {
     $short_desc = trim($_POST['short_desc']);
     $description = trim($_POST['description']);
     
-    // Check if book name already exists (except current book)
-    $checkSql = mysqli_query($con, "SELECT id FROM books WHERE name='$name'");
-    if (mysqli_num_rows($checkSql) > 0) {
-        $existing = mysqli_fetch_assoc($checkSql);
-        if (!$id || $existing['id'] != $id) {
-            $msg = "Book already exists";
+    // Validation
+    if (empty($category_id)) {
+        $msg = "Please select a category";
+    } elseif (empty($ISBN)) {
+        $msg = "Please enter book ISBN";
+    } elseif (empty($name)) {
+        $msg = "Please enter book name";
+    } elseif (empty($author)) {
+        $msg = "Please enter book author";
+    } elseif ($security <= 0) {
+        $msg = "Security charges must be greater than 0";
+    } elseif ($rent <= 0) {
+        $msg = "Rent cost must be greater than 0";
+    } elseif ($qty <= 0) {
+        $msg = "Quantity must be greater than 0";
+    } elseif (empty($short_desc)) {
+        $msg = "Please enter short description";
+    } elseif (empty($description)) {
+        $msg = "Please enter description";
+    } else {
+        // Check if book name already exists (except current book)
+        $nameEscaped = mysqli_real_escape_string($con, $name);
+        $checkSql = mysqli_query($con, "SELECT id FROM books WHERE name='$nameEscaped'");
+        if (mysqli_num_rows($checkSql) > 0) {
+            $existing = mysqli_fetch_assoc($checkSql);
+            if (!$id || $existing['id'] != $id) {
+                $msg = "Book already exists";
+            }
         }
     }
     
@@ -88,14 +110,21 @@ if (isset($_POST['submit'])) {
             // Nếu có upload ảnh mới, sử dụng ảnh mới
             if (!empty($_FILES['img']['name'])) {
                 $img = time() . '_' . $_FILES['img']['name'];
-                move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
-                $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
-                        security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
-                        description='$description', img='$img' WHERE id=$id";
+                if (move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img)) {
+                    // Xóa ảnh cũ nếu tồn tại
+                    if (!empty($currentImg) && file_exists(BOOK_IMAGE_SERVER_PATH . $currentImg)) {
+                        unlink(BOOK_IMAGE_SERVER_PATH . $currentImg);
+                    }
+                    $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author',
+                            security=$security, rent=$rent, qty=$qty, short_desc='$short_desc',
+                            description='$description', img='$img' WHERE id=$id";
+                } else {
+                    $error = "Failed to upload image. Please try again.";
+                }
             } else {
                 // Không upload ảnh mới, giữ nguyên ảnh cũ (không cập nhật field img)
-                $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author', 
-                        security=$security, rent=$rent, qty=$qty, short_desc='$short_desc', 
+                $sql = "UPDATE books SET category_id=$category_id, ISBN='$ISBN', name='$name', author='$author',
+                        security=$security, rent=$rent, qty=$qty, short_desc='$short_desc',
                         description='$description' WHERE id=$id";
                 // Giữ lại ảnh cũ để hiển thị trong form
                 $img = $currentImg;
@@ -104,9 +133,12 @@ if (isset($_POST['submit'])) {
             // Insert new book - bắt buộc phải có ảnh
             if (!empty($_FILES['img']['name'])) {
                 $img = time() . '_' . $_FILES['img']['name'];
-                move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img);
-                $sql = "INSERT INTO books(category_id, ISBN, name, author, security, rent, qty, short_desc, description, status, img)
-                        VALUES ($category_id, '$ISBN', '$name', '$author', $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
+                if (move_uploaded_file($_FILES['img']['tmp_name'], BOOK_IMAGE_SERVER_PATH . $img)) {
+                    $sql = "INSERT INTO books(category_id, ISBN, name, author, vnd, security, rent, qty, short_desc, description, status, img)
+                            VALUES ($category_id, '$ISBN', '$name', '$author', $security, $security, $rent, $qty, '$short_desc', '$description', 1, '$img')";
+                } else {
+                    $error = "Failed to upload image. Please try again.";
+                }
             } else {
                 $msg = "Please upload book image";
             }
