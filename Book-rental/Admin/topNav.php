@@ -114,10 +114,10 @@ if (!isset($_SESSION['ADMIN_LOGIN']) || $_SESSION['ADMIN_LOGIN'] != 'yes') {
                             <button type="button" class="btn btn-light dropdown-toggle" data-mdb-toggle="dropdown" 
                                     aria-expanded="false">' . $userName . '</button>
                                     <ul class="dropdown-menu">
-                                           <li><a class="dropdown-item"  href="logout.php">Logout</a></li>
+                                            <li><button class="dropdown-item" onclick="window.location=\'logout.php\'">Logout</button></li>
                                     </ul>
                         </div>';
                 ?>
             </div>
         </div>
-    </nav>  
+    </nav>
